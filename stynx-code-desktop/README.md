@@ -37,7 +37,7 @@ npm run tauri build   # .dmg / .msi + .exe / .deb + .AppImage per host OS
 Regenerate the full icon set from the shared logo before shipping:
 
 ```bash
-npm run tauri icon ../stynx-code-mac/Resources/AppIcon.icns
+npm run tauri icon src-tauri/icons/icon.png
 ```
 
 ## Platform notes
