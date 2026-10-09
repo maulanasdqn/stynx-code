@@ -5,7 +5,6 @@ export function recentWorkspaces() {
   try {
     const raw = localStorage.getItem(KEY);
     const list = raw ? JSON.parse(raw) : [];
-    // "/" is the cwd of a Finder-launched app, never a real project.
     return Array.isArray(list) ? list.filter((path) => path && path !== "/") : [];
   } catch {
     return [];
@@ -18,7 +17,6 @@ export function rememberWorkspace(path) {
   try {
     localStorage.setItem(KEY, JSON.stringify(list));
   } catch {
-    /* storage unavailable — recents just won't persist */
   }
   return list;
 }
@@ -28,7 +26,6 @@ export function forgetWorkspace(path) {
   try {
     localStorage.setItem(KEY, JSON.stringify(list));
   } catch {
-    /* ignore */
   }
   return list;
 }

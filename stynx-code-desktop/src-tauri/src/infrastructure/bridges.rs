@@ -16,9 +16,6 @@ pub struct BridgeResponders {
     pub workspace: WorkspaceResponders,
 }
 
-/// Installs the engine's interactive bridges (permission prompts, ask-user
-/// questions, cross-workspace messages) and forwards each request to the
-/// webview as a UiEvent; undeliverable requests resolve to a safe default.
 pub fn install(app: &AppHandle, handles: &AppHandles) -> BridgeResponders {
     let responders = BridgeResponders {
         prompt: PromptResponders::default(),

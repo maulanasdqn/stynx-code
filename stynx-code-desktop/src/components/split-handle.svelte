@@ -1,5 +1,4 @@
 <script>
-  // A thin draggable divider, like HSplitView / NavigationSplitView's column edge.
   export let onDrag;
   export let line = true;
 

@@ -1,4 +1,3 @@
-/* macOS system palette, mirroring the SwiftUI app (stynx-code-mac). */
 :root {
   color-scheme: light dark;
   --fg-rgb: 0, 0, 0;
@@ -24,7 +23,6 @@
   --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   --toolbar-h: 52px;
 
-  /* macOS text styles */
   --body: 13px;
   --callout: 12px;
   --subheadline: 11px;
@@ -79,7 +77,6 @@ body,
   -webkit-user-select: none;
 }
 
-/* On macOS the window is transparent so the sidebar can show vibrancy. */
 html.mac,
 html.mac body,
 html.mac #app {
@@ -123,7 +120,6 @@ textarea {
   white-space: nowrap;
 }
 
-/* Native-looking push buttons (.bordered / .borderedProminent). */
 .push {
   font-size: var(--body);
   padding: 3px 12px;

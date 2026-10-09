@@ -114,8 +114,9 @@ pub fn handle_model_cmd(name: &str, provider: &dyn Provider, mode_flag: &std::sy
     if name.is_empty() {
         let current = provider.model_name();
         let items: Vec<(String, String)> = vec![
-            ("claude-sonnet-4-6".into(), "claude-sonnet-4-6".into()),
+            ("claude-opus-4-6[1m]".into(), "claude-opus-4-6[1m]".into()),
             ("claude-opus-4-6".into(), "claude-opus-4-6".into()),
+            ("claude-sonnet-4-6".into(), "claude-sonnet-4-6".into()),
             ("claude-haiku-4-5-20251001".into(), "claude-haiku-4-5-20251001".into()),
             ("claude-sonnet-4-5-20250929".into(), "claude-sonnet-4-5-20250929".into()),
         ];
@@ -128,7 +129,7 @@ pub fn handle_model_cmd(name: &str, provider: &dyn Provider, mode_flag: &std::sy
         }
     } else {
         let resolved = match name {
-            "opus" => "claude-opus-4-6",
+            "opus" => "claude-opus-4-6[1m]",
             "sonnet" => "claude-sonnet-4-6",
             "haiku" => "claude-haiku-4-5-20251001",
             other => other,

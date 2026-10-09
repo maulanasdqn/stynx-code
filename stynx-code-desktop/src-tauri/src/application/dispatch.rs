@@ -5,9 +5,6 @@ use stynx_code_types::Message;
 use crate::application::session::Session;
 use crate::domain::ui_event::UiEvent;
 
-/// Runs one engine turn for `message`, streaming events through `sink` and
-/// persisting the result. Framework-free: the caller supplies the sink, so
-/// this layer never touches Tauri directly.
 pub fn dispatch<F>(session: Arc<Session>, message: Message, sink: F)
 where
     F: Fn(UiEvent) + Send + Sync + Clone + 'static,

@@ -1,5 +1,4 @@
 <script>
-  // A window-modal sheet that drops from the toolbar, like SwiftUI's .sheet.
   export let width = 460;
   export let onCancel;
 

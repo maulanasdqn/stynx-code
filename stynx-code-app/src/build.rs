@@ -151,8 +151,6 @@ fn apply_model_settings(
     if let Some(model) = model_override {
         provider.set_model(model);
     } else if let Some(ref model) = config.model {
-        // `model` belongs to the configured main provider; when another provider is
-        // picked (e.g. Claude while settings say DeepSeek) keep that provider's default.
         let configured = std::env::var("STYNX_MAIN_PROVIDER").ok().or_else(|| config.main_provider.clone());
         let matches = configured
             .as_deref()

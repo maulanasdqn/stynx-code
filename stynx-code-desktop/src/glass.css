@@ -1,5 +1,3 @@
-/* Liquid Glass (macOS 26) for the webview: frosted body, specular rim,
-   pointer-tracked highlight, and spring-driven press/hover. */
 :root {
   --spring: cubic-bezier(0.34, 1.4, 0.5, 1);
   --smooth: cubic-bezier(0.22, 1, 0.36, 1);
@@ -47,7 +45,6 @@
     background-position 0.3s var(--smooth);
 }
 
-/* Specular rim: bright where light hits the top edge, fading round the sides. */
 .glass::before {
   content: "";
   position: absolute;
@@ -70,8 +67,6 @@
   z-index: 1;
 }
 
-/* Large surfaces (panels, composer, cards): clear glass, no moving shine,
-   just a faint top-lit tint and a hairline rim. */
 .glass.panel {
   background: linear-gradient(180deg, var(--panel-tint), var(--panel-tint-2));
   box-shadow:
@@ -83,7 +78,6 @@
   opacity: 0.45;
 }
 
-/* Tappable glass squishes like a droplet and springs back. */
 .glass.interactive:hover {
   box-shadow:
     var(--glass-shadow),
@@ -96,7 +90,6 @@
   transition-duration: 0.12s;
 }
 
-/* Buttons everywhere get spring press feedback. */
 button {
   transition:
     transform 0.45s var(--spring),
@@ -110,7 +103,6 @@ button:active:not(:disabled) {
   transition-duration: 0.1s;
 }
 
-/* Capsule buttons inside glass groups light up from within. */
 .glass-item {
   border-radius: 999px;
 }
@@ -131,7 +123,6 @@ button:active:not(:disabled) {
   }
 }
 
-/* Busy glass: light slowly flows across the surface. */
 .glass.busy::after {
   content: "";
   position: absolute;

@@ -1,7 +1,8 @@
 use stynx_code_types::Conversation;
 use tauri::State;
 
-use crate::application::session::{SessionSlot, message_to_turn};
+use crate::application::replay::replay;
+use crate::application::session::SessionSlot;
 use crate::domain::models::{SessionSummary, Turn};
 use crate::infrastructure::commands::active;
 
@@ -33,7 +34,7 @@ pub async fn load_session(slot: State<'_, SessionSlot>, id: String) -> Result<Ve
     if conversation.system.is_none() {
         conversation.system = Some(session.system_prompt.clone());
     }
-    let turns = conversation.messages.iter().filter_map(message_to_turn).collect();
+    let turns = replay(&conversation);
     *session.current_session_id.lock().unwrap() = Some(id);
     *session.conversation.lock().await = conversation;
     Ok(turns)

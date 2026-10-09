@@ -15,7 +15,6 @@
 
   $: $feed, $permissionPrompt, $question, $isStreaming, scrollToBottom();
 
-  // Hide the dots once the assistant (or its thinking) has started producing text.
   $: last = $feed[$feed.length - 1];
   $: showTyping =
     $isStreaming && !(last && (last.role === "assistant" || last.role === "thinking") && last.text);
@@ -81,7 +80,6 @@
     animation: surface 0.6s var(--spring) backwards;
   }
 
-  /* Entries surface out of the glass: rise, unblur, settle with a soft overshoot. */
   @keyframes surface {
     from {
       opacity: 0;
@@ -98,7 +96,6 @@
     align-items: flex-start;
   }
 
-  /* The composer floats over the transcript so messages slide under the glass. */
   .composer-dock {
     position: absolute;
     left: 0;

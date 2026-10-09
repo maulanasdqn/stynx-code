@@ -9,6 +9,12 @@ struct ModelEntry {
 
 const MODELS: &[ModelEntry] = &[
     ModelEntry {
+        id: "claude-opus-4-6[1m]",
+        name: "Claude Opus 4.6 (1M context)",
+        provider: "Anthropic",
+        note: Some("default"),
+    },
+    ModelEntry {
         id: "claude-opus-4-7",
         name: "Claude Opus 4.7",
         provider: "Anthropic",

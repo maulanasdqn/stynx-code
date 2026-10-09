@@ -26,7 +26,6 @@ pub struct ImageFile {
     pub data: String,
 }
 
-/// Reads an image picked from the native open panel as base64 for the composer.
 #[tauri::command]
 pub async fn read_image(path: String) -> Result<ImageFile, String> {
     use base64::Engine;

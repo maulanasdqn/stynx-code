@@ -11,7 +11,6 @@
     $permissionPrompt = null;
   }
 
-  // .keyboardShortcut(.defaultAction) on "Allow Once" — unless the user is typing.
   function keydown(event) {
     if (event.key !== "Enter" || event.target.closest("textarea, input")) return;
     event.preventDefault();

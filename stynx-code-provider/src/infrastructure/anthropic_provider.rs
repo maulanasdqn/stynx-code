@@ -45,8 +45,6 @@ pub(crate) const EFFORT_BETA_HEADER: &str = "effort-2025-11-24";
 pub(crate) const CONTEXT_1M_BETA_HEADER: &str = "context-1m-2025-08-07";
 const CONTEXT_1M_SUFFIX: &str = "[1m]";
 
-/// Splits Claude Code's `model[1m]` convention into the API model id and
-/// whether the 1M-token context beta should be requested.
 pub(crate) fn split_context_suffix(model: &str) -> (&str, bool) {
     match model.strip_suffix(CONTEXT_1M_SUFFIX) {
         Some(base) => (base.trim_end(), true),
@@ -251,7 +249,6 @@ impl AnthropicProvider {
 #[async_trait::async_trait]
 impl Provider for AnthropicProvider {
     fn model_name(&self) -> String { self.effective_model() }
-    // Claude models ship a 200k window; a `[1m]` model id opts into the 1M beta.
     fn context_window(&self) -> u64 {
         if split_context_suffix(&self.effective_model()).1 { 1_000_000 } else { 200_000 }
     }

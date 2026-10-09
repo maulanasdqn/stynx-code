@@ -1,7 +1,3 @@
-// SVG stand-ins for the SF Symbols the SwiftUI app uses, keyed by symbol name.
-// Each value is inner markup for a 24×24 viewBox; strokes use currentColor.
-// Entries prefixed with "fill:" are drawn filled instead of stroked.
-
 const doc = '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>';
 const bubble = '<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/>';
 const person = '<circle cx="9" cy="8" r="4"/><path d="M2 21v-1a6 6 0 0 1 6-6h2a6 6 0 0 1 6 6v1"/>';
@@ -50,7 +46,6 @@ export const ICONS = {
   "arrow.up.circle.fill":
     'fill:<path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm.9 5.3 4.4 4.4-1.4 1.4-2.9-2.9V17h-2v-6.8l-2.9 2.9-1.4-1.4 4.4-4.4a.9.9 0 0 1 1.3 0z"/>',
   "stop.circle.fill": 'fill:<path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM9 8h6a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/>',
-  // .symbolRenderingMode(.hierarchical): tinted disc, solid glyph.
   "arrow.up.circle.hierarchical":
     'fill:<circle cx="12" cy="12" r="10.5" opacity=".28"/><path d="M12 17V7.8M7.8 11.8 12 7.6l4.2 4.2" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>',
   "stop.circle.hierarchical":

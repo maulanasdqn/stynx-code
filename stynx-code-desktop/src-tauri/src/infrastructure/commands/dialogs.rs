@@ -1,6 +1,3 @@
-//! Native open panels and confirmation alerts, driven from Rust so the
-//! webview needs no dialog-plugin permissions (mirrors NSOpenPanel / alerts
-//! in the SwiftUI app).
 use tauri::{AppHandle, WebviewWindow};
 use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 use tokio::sync::oneshot;

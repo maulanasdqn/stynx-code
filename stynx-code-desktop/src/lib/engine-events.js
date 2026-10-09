@@ -17,6 +17,7 @@ import { recordFileChange } from "./changes.js";
 import { titleFor, toolInputField } from "./tool-title.js";
 
 const TOOL_DETAIL_CHARS = 2000;
+const HIDDEN_TOOLS = new Set(["ask_user_question"]);
 
 let currentStreamKind = null;
 let currentToolId = "";
@@ -141,6 +142,7 @@ function startTool(name, id) {
   currentStreamKind = null;
   currentToolId = id;
   toolInputBuffers.set(id, "");
+  if (HIDDEN_TOOLS.has(name)) return;
   feed.update((items) => [
     ...items,
     {

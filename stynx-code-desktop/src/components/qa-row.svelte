@@ -37,8 +37,6 @@
     if (!question.multiSelect && label !== OTHER) open = false;
   }
 
-  // Render the popover at the document root so no transformed or clipped
-  // ancestor can capture its fixed positioning; close on outside clicks.
   function floating(node) {
     document.body.appendChild(node);
     const handler = (event) => {

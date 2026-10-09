@@ -36,7 +36,6 @@ export async function addImagePaths(paths) {
       const image = await readImage(path);
       pendingImages.update((images) => [...images, { id: `img-${++counter}`, ...image }]);
     } catch {
-      /* unreadable or too large — skip it like the Mac app does */
     }
   }
 }

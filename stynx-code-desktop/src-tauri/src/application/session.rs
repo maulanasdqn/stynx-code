@@ -6,10 +6,10 @@ use stynx_code_engine::QueryEngine;
 use stynx_code_memory::SessionRepository;
 use stynx_code_permission::PromptChoice;
 use stynx_code_provider::AnthropicProvider;
-use stynx_code_types::{ContentBlock, Conversation, Message, Provider, Role};
+use stynx_code_types::{Conversation, Provider};
 use tokio::sync::{Mutex, oneshot};
 
-use crate::domain::models::{InternInfo, SessionInfo, Turn};
+use crate::domain::models::{InternInfo, SessionInfo};
 
 pub type PromptResponders = Arc<StdMutex<HashMap<u64, oneshot::Sender<PromptChoice>>>>;
 pub type QuestionResponders = Arc<StdMutex<HashMap<u64, oneshot::Sender<Option<String>>>>>;
@@ -76,24 +76,4 @@ pub fn current_interns() -> Vec<InternInfo> {
             available: intern.available,
         })
         .collect()
-}
-
-pub fn message_to_turn(message: &Message) -> Option<Turn> {
-    let text: String = message
-        .content
-        .iter()
-        .filter_map(|block| match block {
-            ContentBlock::Text { text } => Some(text.as_str()),
-            _ => None,
-        })
-        .collect::<Vec<_>>()
-        .join("");
-    if text.trim().is_empty() {
-        return None;
-    }
-    let role = match message.role {
-        Role::User => "user",
-        Role::Assistant => "assistant",
-    };
-    Some(Turn { role: role.to_string(), text })
 }

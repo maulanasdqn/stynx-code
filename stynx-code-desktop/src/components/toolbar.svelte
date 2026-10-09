@@ -66,7 +66,6 @@
 </header>
 
 <style>
-  /* Tahoe toolbar: no bar, just floating glass over a soft scroll-edge fade. */
   .toolbar {
     position: absolute;
     top: 0;

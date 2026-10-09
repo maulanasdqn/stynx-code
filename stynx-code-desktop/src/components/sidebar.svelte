@@ -66,7 +66,6 @@
     padding: 0 10px 16px;
   }
 
-  /* Shared sidebar List styling (SwiftUI .listStyle(.sidebar)). */
   .list :global(section) {
     margin-bottom: 10px;
   }

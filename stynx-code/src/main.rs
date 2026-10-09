@@ -79,6 +79,7 @@ async fn main() {
     let _entered = tracing::info_span!("stynx", session_id = %session_id).entered();
     tracing::info!(version = %env!("CARGO_PKG_VERSION"), "stynx starting");
 
+    stynx_code_app::apply_persisted_keys();
     let config = load_config();
     let credential = stynx_code_auth::resolve_credential().ok();
 
@@ -142,7 +143,6 @@ async fn main() {
 
     if let Some(ref model) = cli.model { provider.set_model(model); }
     else if let Some(ref model) = config.model {
-        // `model` belongs to the configured main provider; another provider keeps its default.
         let configured = std::env::var("STYNX_MAIN_PROVIDER").ok().or_else(|| config.main_provider.clone());
         let matches = configured
             .as_deref()

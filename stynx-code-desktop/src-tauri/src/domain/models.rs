@@ -35,13 +35,19 @@ pub struct SessionSummary {
     pub message_count: u32,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Default)]
+#[serde(rename_all = "camelCase")]
 pub struct Turn {
     pub role: String,
     pub text: String,
+    pub images: Vec<ImagePayload>,
+    pub tool_name: Option<String>,
+    pub tool_input: Option<String>,
+    pub tool_output: Option<String>,
+    pub is_error: bool,
 }
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ImagePayload {
     pub media_type: String,

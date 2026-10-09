@@ -1,5 +1,7 @@
 <script>
+  import { slide } from "svelte/transition";
   import Icon from "./icon.svelte";
+  import { smooth } from "../lib/motion.js";
 
   export let tool;
 
@@ -30,10 +32,19 @@
     }
   }
 
+  let expanded = false;
+
   $: glyph = toolBadge(tool.name);
+  $: hasDetail = Boolean(tool.detail?.trim());
 </script>
 
-<div class="card" class:accent={glyph.accent}>
+<!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
+<div
+  class="card"
+  class:accent={glyph.accent}
+  class:expandable={hasDetail}
+  on:click={() => hasDetail && (expanded = !expanded)}
+>
   <span class="glyph"><Icon name={glyph.symbol} size={13} weight={2.2} /></span>
   <span class="text">
     <span class="title mono ellipsis">{tool.title || tool.name}</span>
@@ -51,6 +62,9 @@
     <span class="done"><Icon name="checkmark" size={10} weight={3} /></span>
   {/if}
 </div>
+{#if expanded && hasDetail}
+  <pre class="detail selectable" transition:slide={{ duration: 360, easing: smooth }}>{tool.detail}</pre>
+{/if}
 
 <style>
   .card {
@@ -67,6 +81,25 @@
     transition:
       background-color 0.3s var(--smooth),
       transform 0.5s var(--spring);
+  }
+
+  .card.expandable {
+    cursor: pointer;
+  }
+
+  .detail {
+    margin: 6px 0 0 15px;
+    max-height: 260px;
+    overflow: auto;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: rgba(var(--fg-rgb), 0.035);
+    font-family: var(--mono);
+    font-size: var(--caption);
+    line-height: 1.5;
+    color: var(--secondary);
+    white-space: pre-wrap;
+    word-break: break-word;
   }
 
   .card:hover {

@@ -9,7 +9,6 @@ import {
   mode,
   thinking,
   resetTranscript,
-  nextId,
 } from "./stores.js";
 import {
   initSession,
@@ -24,6 +23,7 @@ import {
 } from "./api.js";
 import { rememberWorkspace } from "./workspaces.js";
 import { rebuildFileIndex } from "./mentions.js";
+import { feedFromTurns } from "./replay.js";
 
 export async function openWorkspace(path, provider) {
   status.set("Starting…");
@@ -49,7 +49,7 @@ export async function openSession(id) {
   if (get(isStreaming)) return;
   const turns = await loadSession(id);
   resetTranscript();
-  feed.set(turns.map((turn) => ({ id: nextId(), role: turn.role, text: turn.text })));
+  feed.set(feedFromTurns(turns));
   status.set("Loaded session");
 }
 
@@ -92,6 +92,5 @@ export async function refreshSessions() {
   try {
     sessions.set(await listSessions());
   } catch {
-    /* keep the last known list */
   }
 }

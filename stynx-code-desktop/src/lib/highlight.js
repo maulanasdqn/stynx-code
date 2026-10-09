@@ -1,6 +1,3 @@
-// Port of CodeViewer.swift's `highlight(_:ext:)`: a tiny regex colourer.
-// Passes run in the same order as Swift so later passes win (strings > keywords > numbers).
-
 const KEYWORDS = [
   "fn", "let", "mut", "pub", "struct", "enum", "impl", "trait", "use", "mod", "match",
   "if", "else", "for", "while", "loop", "return", "self", "async", "await", "move",

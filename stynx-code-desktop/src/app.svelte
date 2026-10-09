@@ -22,7 +22,6 @@
 
   onMount(async () => {
     await attachEngineEvents();
-    // Like AppModel: reopen the last project; with none, ask via the open panel.
     const last = recentWorkspaces()[0];
     if (!(last && (await open(last, null)))) await chooseWorkspace();
   });
@@ -95,9 +94,6 @@
     height: 100%;
   }
 
-  /* macOS 26 floating sidebar: a rounded glass slab inset from the window edge.
-     On macOS its body stays transparent so the native vibrancy shows through;
-     the spread shadow paints the window background around the rounded corners. */
   .sidebar-col {
     flex-shrink: 0;
     height: 100%;

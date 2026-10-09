@@ -1,5 +1,3 @@
-// Native macOS affordances the SwiftUI app gets for free: open panels,
-// confirmation dialogs, and context / pull-down menus.
 import { invoke } from "@tauri-apps/api/core";
 import { Menu, MenuItem, PredefinedMenuItem } from "@tauri-apps/api/menu";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -7,7 +5,6 @@ import { LogicalPosition } from "@tauri-apps/api/dpi";
 
 export const isMac = navigator.userAgent.includes("Mac");
 
-// Dialogs run through our own Rust commands (commands/dialogs.rs).
 export const pickFolder = () => invoke("pick_folder");
 
 export const pickFiles = ({ title = "Open", images = false } = {}) =>
@@ -16,8 +13,6 @@ export const pickFiles = ({ title = "Open", images = false } = {}) =>
 export const confirmDestructive = (title, message, okLabel) =>
   invoke("confirm_destructive", { title, message, okLabel });
 
-/// Shows a native menu. `items` is a list of `{ text, action, enabled }`,
-/// `"-"` for a separator, or `{ text, enabled: false }` for a label row.
 export async function popupMenu(items, event) {
   const built = await Promise.all(
     items.map((item) =>

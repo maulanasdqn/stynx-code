@@ -13,7 +13,6 @@ export async function addReferencePaths(paths) {
     try {
       text = (await readFile(path)).slice(0, MAX_CHARS);
     } catch {
-      /* keep it listed with no extracted text */
     }
     push(name, path, looksBinary(text) ? "" : text);
   }
@@ -41,7 +40,6 @@ export function removeReference(id) {
   dirty = true;
 }
 
-/// Wraps not-yet-sent reference documents around the outgoing message text.
 export function injectReferences(text) {
   const docs = get(references);
   if (docs.length === 0 || !dirty) return { text, count: 0 };

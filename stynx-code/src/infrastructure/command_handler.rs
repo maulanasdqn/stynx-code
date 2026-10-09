@@ -42,12 +42,17 @@ pub async fn handle_slash_command(
     }
 
     if matches!(cmd, SlashCommand::Fast) {
+        static BEFORE_FAST: std::sync::Mutex<Option<String>> = std::sync::Mutex::new(None);
         let current = provider.model_name();
         if current.contains("haiku") {
-            let restore = config.model.as_deref().unwrap_or("claude-sonnet-4-6");
+            let saved = BEFORE_FAST.lock().ok().and_then(|mut slot| slot.take());
+            let restore = saved.as_deref().unwrap_or("claude-opus-4-6[1m]");
             provider.set_model(restore);
             return Some(CommandAction::Output(format!("\n  {DIM}Fast mode off →{RESET} {BOLD}{CYAN}{restore}{RESET}\n")));
         } else {
+            if let Ok(mut slot) = BEFORE_FAST.lock() {
+                *slot = Some(current);
+            }
             provider.set_model(FAST_MODEL);
             return Some(CommandAction::Output(format!("\n  {CYAN}{BOLD}⚡ Fast mode on →{RESET} {BOLD}{CYAN}{FAST_MODEL}{RESET}\n")));
         }

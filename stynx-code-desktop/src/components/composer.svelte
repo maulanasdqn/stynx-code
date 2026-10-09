@@ -27,7 +27,6 @@
   async function autosize() {
     await tick();
     if (!textarea) return;
-    // Measure at `auto` with transitions off, then glide from the old height.
     const from = textarea.offsetHeight;
     textarea.style.transition = "none";
     textarea.style.height = "auto";
@@ -132,7 +131,6 @@
       transform 0.6s var(--spring);
   }
 
-  /* Focus: the slab lifts and its rim catches more light. */
   .composer:focus-within {
     transform: translateY(-1px);
     box-shadow:
