@@ -10,7 +10,7 @@ pub mod provider;
 pub mod system_prompt;
 pub mod workspace_bridge;
 
-pub use build::{AppHandles, AppOptions, build_app};
+pub use build::{AppHandles, AppOptions, build_app, configured_model_applies};
 pub use git::{git_branch, git_status_snapshot, is_git_repo};
 pub use keys::{apply_persisted_keys, save_provider_key};
 pub use prompt_sections::EnvInfo;

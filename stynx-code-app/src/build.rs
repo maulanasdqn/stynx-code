@@ -150,16 +150,10 @@ fn apply_model_settings(
 ) {
     if let Some(model) = model_override {
         provider.set_model(model);
-    } else if let Some(ref model) = config.model {
-        let configured = std::env::var("STYNX_MAIN_PROVIDER").ok().or_else(|| config.main_provider.clone());
-        let matches = configured
-            .as_deref()
-            .map(str::trim)
-            .filter(|name| !name.is_empty())
-            .is_none_or(|name| name.eq_ignore_ascii_case(provider_label));
-        if matches {
-            provider.set_model(model);
-        }
+    } else if let Some(ref model) = config.model
+        && configured_model_applies(config, provider_label, model)
+    {
+        provider.set_model(model);
     }
     if let Ok(model) = std::env::var("MODEL") {
         provider.set_model(&model);
@@ -267,4 +261,39 @@ async fn build_registry(cwd: &str, pause_flag: &Arc<AtomicBool>) -> BuiltRegistr
     }
 
     BuiltRegistry { registry, ask_user_bridge }
+}
+
+pub fn configured_model_applies(config: &Settings, provider_label: &str, model: &str) -> bool {
+    let configured = std::env::var("STYNX_MAIN_PROVIDER").ok().or_else(|| config.main_provider.clone());
+    let provider_matches = configured
+        .as_deref()
+        .map(str::trim)
+        .filter(|name| !name.is_empty())
+        .is_none_or(|name| name.eq_ignore_ascii_case(provider_label));
+    let model_lower = model.trim().to_ascii_lowercase();
+    let claude_model = model_lower.starts_with("claude")
+        || model_lower.starts_with("anthropic/")
+        || model_lower == "opusplan";
+    let claude_provider = provider_label.eq_ignore_ascii_case("claude");
+    provider_matches && claude_model == claude_provider
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn settings(main_provider: &str) -> Settings {
+        serde_json::from_value(serde_json::json!({ "main_provider": main_provider })).unwrap()
+    }
+
+    #[test]
+    fn configured_model_only_applies_to_its_provider_family() {
+        let claude = settings("claude");
+        assert!(!configured_model_applies(&claude, "claude", "deepseek-v4-pro"));
+        assert!(configured_model_applies(&claude, "claude", "claude-opus-4-6[1m]"));
+        let deepseek = settings("deepseek");
+        assert!(configured_model_applies(&deepseek, "deepseek", "deepseek-v4-pro"));
+        assert!(!configured_model_applies(&deepseek, "claude", "deepseek-v4-pro"));
+        assert!(!configured_model_applies(&deepseek, "deepseek", "claude-sonnet-4-6"));
+    }
 }
