@@ -36,12 +36,23 @@ pub struct Utilization {
 }
 
 const DEFAULT_MODEL: &str = "anthropic/claude-sonnet-4-20250514";
-pub(crate) const OAUTH_DEFAULT_MODEL: &str = "claude-sonnet-4-6";
+pub(crate) const OAUTH_DEFAULT_MODEL: &str = "claude-opus-4-6[1m]";
 const OPUS_MODEL: &str = "claude-opus-4-6";
 pub(crate) const MAX_TOKENS: u32 = 4096;
 
 pub(crate) const OAUTH_BETA_HEADER: &str = "oauth-2025-04-20,interleaved-thinking-2025-05-14,claude-code-20250219,prompt-caching-2024-07-31";
 pub(crate) const EFFORT_BETA_HEADER: &str = "effort-2025-11-24";
+pub(crate) const CONTEXT_1M_BETA_HEADER: &str = "context-1m-2025-08-07";
+const CONTEXT_1M_SUFFIX: &str = "[1m]";
+
+/// Splits Claude Code's `model[1m]` convention into the API model id and
+/// whether the 1M-token context beta should be requested.
+pub(crate) fn split_context_suffix(model: &str) -> (&str, bool) {
+    match model.strip_suffix(CONTEXT_1M_SUFFIX) {
+        Some(base) => (base.trim_end(), true),
+        None => (model, false),
+    }
+}
 pub(crate) const BILLING_HEADER_LINE: &str = "x-anthropic-billing-header: cc_version=2.1.87.d34; cc_entrypoint=cli;";
 
 /// Re-resolve (and thus refresh) an OAuth access token once it is within this
@@ -240,9 +251,10 @@ impl AnthropicProvider {
 #[async_trait::async_trait]
 impl Provider for AnthropicProvider {
     fn model_name(&self) -> String { self.effective_model() }
-    // Every current Claude model ships a 200k context window; 1M-beta models
-    // still accept 200k, so this stays the safe floor.
-    fn context_window(&self) -> u64 { 200_000 }
+    // Claude models ship a 200k window; a `[1m]` model id opts into the 1M beta.
+    fn context_window(&self) -> u64 {
+        if split_context_suffix(&self.effective_model()).1 { 1_000_000 } else { 200_000 }
+    }
     fn set_model(&self, model: &str) { AnthropicProvider::set_model(self, model); }
     fn set_max_tokens(&self, n: u32) { AnthropicProvider::set_max_tokens(self, n); }
     fn set_thinking_budget(&self, budget: u32) { AnthropicProvider::set_thinking_budget(self, budget); }
@@ -263,7 +275,8 @@ impl Provider for AnthropicProvider {
         let max_tokens = self.max_tokens.load(Ordering::Relaxed);
         let thinking_budget = *self.thinking_budget.lock().unwrap();
         let effort = self.effort.lock().unwrap().clone();
-        let body = build_request_body(&credential, &model_display, conversation, tools, thinking, max_tokens, thinking_budget, effort.as_deref());
+        let (api_model, long_context) = split_context_suffix(&model_display);
+        let body = build_request_body(&credential, api_model, conversation, tools, thinking, max_tokens, thinking_budget, effort.as_deref());
 
         let request = match &credential {
             Credential::ClaudeCodeOAuth { access_token, .. } | Credential::AuthToken { token: access_token, .. } => {
@@ -274,6 +287,10 @@ impl Provider for AnthropicProvider {
                 if effort.is_some() {
                     beta.push(',');
                     beta.push_str(EFFORT_BETA_HEADER);
+                }
+                if long_context {
+                    beta.push(',');
+                    beta.push_str(CONTEXT_1M_BETA_HEADER);
                 }
 
                 self.client
@@ -305,6 +322,10 @@ impl Provider for AnthropicProvider {
                 if effort.is_some() {
                     beta.push(',');
                     beta.push_str(EFFORT_BETA_HEADER);
+                }
+                if long_context {
+                    beta.push(',');
+                    beta.push_str(CONTEXT_1M_BETA_HEADER);
                 }
                 rb = rb.header("anthropic-beta", beta);
                 rb

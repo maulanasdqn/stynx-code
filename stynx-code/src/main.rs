@@ -141,7 +141,16 @@ async fn main() {
     };
 
     if let Some(ref model) = cli.model { provider.set_model(model); }
-    else if let Some(ref model) = config.model { provider.set_model(model); }
+    else if let Some(ref model) = config.model {
+        // `model` belongs to the configured main provider; another provider keeps its default.
+        let configured = std::env::var("STYNX_MAIN_PROVIDER").ok().or_else(|| config.main_provider.clone());
+        let matches = configured
+            .as_deref()
+            .map(str::trim)
+            .filter(|name| !name.is_empty())
+            .is_none_or(|name| name.eq_ignore_ascii_case(&picked.label));
+        if matches { provider.set_model(model); }
+    }
     if let Ok(model) = std::env::var("MODEL") { provider.set_model(&model); }
     if let Some(mt) = config.max_tokens { provider.set_max_tokens(mt); }
     if let Some(total) = cli.thinking_budget {

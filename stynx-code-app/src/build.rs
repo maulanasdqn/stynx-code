@@ -71,7 +71,7 @@ pub async fn build_app(options: AppOptions) -> Result<AppHandles, String> {
     let provider_label = resolved.label.clone();
     let provider = resolved.provider;
 
-    apply_model_settings(&provider, &config, options.model_override.as_deref());
+    apply_model_settings(&provider, &provider_label, &config, options.model_override.as_deref());
 
     let built = build_registry(&options.cwd, &pause_flag).await;
     let ask_user_bridge = built.ask_user_bridge.clone();
@@ -142,11 +142,26 @@ pub async fn build_app(options: AppOptions) -> Result<AppHandles, String> {
     })
 }
 
-fn apply_model_settings(provider: &Arc<dyn Provider>, config: &Settings, model_override: Option<&str>) {
+fn apply_model_settings(
+    provider: &Arc<dyn Provider>,
+    provider_label: &str,
+    config: &Settings,
+    model_override: Option<&str>,
+) {
     if let Some(model) = model_override {
         provider.set_model(model);
     } else if let Some(ref model) = config.model {
-        provider.set_model(model);
+        // `model` belongs to the configured main provider; when another provider is
+        // picked (e.g. Claude while settings say DeepSeek) keep that provider's default.
+        let configured = std::env::var("STYNX_MAIN_PROVIDER").ok().or_else(|| config.main_provider.clone());
+        let matches = configured
+            .as_deref()
+            .map(str::trim)
+            .filter(|name| !name.is_empty())
+            .is_none_or(|name| name.eq_ignore_ascii_case(provider_label));
+        if matches {
+            provider.set_model(model);
+        }
     }
     if let Ok(model) = std::env::var("MODEL") {
         provider.set_model(&model);

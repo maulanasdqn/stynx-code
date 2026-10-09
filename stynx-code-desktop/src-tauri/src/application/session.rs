@@ -46,6 +46,8 @@ pub fn session_info(session: &Session) -> SessionInfo {
         main_providers: stynx_code_app::list_main_providers(),
         claude_available: session.anthropic.is_some(),
         claude_models: vec![
+            "claude-opus-4-6[1m]".to_string(),
+            "claude-opus-4-6".to_string(),
             "claude-opus-4-8".to_string(),
             "claude-sonnet-4-6".to_string(),
             "claude-haiku-4-5-20251001".to_string(),
