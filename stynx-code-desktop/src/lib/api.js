@@ -22,3 +22,4 @@ export const respondWorkspaceMessage = (id, reply) =>
 export const readFile = (path) => invoke("read_file", { path });
 export const fetchReference = (url) => invoke("fetch_reference", { url });
 export const listProjectFiles = (root) => invoke("list_project_files", { root });
+export const readImage = (path) => invoke("read_image", { path });

@@ -1,4 +1,5 @@
 import { pendingImages } from "./stores.js";
+import { readImage } from "./api.js";
 
 let counter = 0;
 
@@ -26,6 +27,17 @@ export function addImageFiles(files) {
       ]);
     };
     reader.readAsDataURL(file);
+  }
+}
+
+export async function addImagePaths(paths) {
+  for (const path of paths) {
+    try {
+      const image = await readImage(path);
+      pendingImages.update((images) => [...images, { id: `img-${++counter}`, ...image }]);
+    } catch {
+      /* unreadable or too large — skip it like the Mac app does */
+    }
   }
 }
 

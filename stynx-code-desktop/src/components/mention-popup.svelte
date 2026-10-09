@@ -1,4 +1,5 @@
 <script>
+  import Icon from "./icon.svelte";
   import { composerDraft } from "../lib/stores.js";
   import { currentMention, mentionSuggestions, applyMention } from "../lib/mentions.js";
 
@@ -11,11 +12,11 @@
 </script>
 
 {#if suggestions.length > 0}
-  <div class="popup">
+  <div class="popup glass panel">
     {#each suggestions as path (path)}
       <button on:click={() => pick(path)}>
-        <span class="icon">📄</span>
-        <span class="path">{path}</span>
+        <span class="icon"><Icon name="doc" size={11} /></span>
+        <span class="path mono ellipsis">{path}</span>
       </button>
     {/each}
   </div>
@@ -25,36 +26,31 @@
   .popup {
     display: flex;
     flex-direction: column;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 4px;
+    padding: 6px;
+    border-radius: 14px;
     max-height: 240px;
     overflow-y: auto;
+    box-shadow: none;
   }
 
   button {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     padding: 6px 10px;
     border-radius: 8px;
     text-align: left;
-    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-    font-size: 12px;
   }
 
   button:hover {
-    background: var(--accent-soft);
+    background: var(--hover);
   }
 
   .icon {
-    font-size: 11px;
+    color: var(--secondary);
   }
 
   .path {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    font-size: var(--callout);
   }
 </style>

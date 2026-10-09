@@ -1,157 +1,101 @@
 <script>
+  import { tick } from "svelte";
+  import Icon from "./icon.svelte";
+  import DiffCard from "./diff-card.svelte";
   import { changes } from "../lib/stores.js";
-  import DiffView from "./diff-view.svelte";
 
-  let expanded = {};
+  let scroller;
 
   $: lastId = $changes[$changes.length - 1]?.id;
+  $: $changes.length, scrollToBottom();
 
-  function isOpen(change) {
-    return expanded[change.id] ?? change.id === lastId;
-  }
-
-  function toggle(change) {
-    expanded = { ...expanded, [change.id]: !isOpen(change) };
+  async function scrollToBottom() {
+    await tick();
+    scroller?.scrollTo({ top: scroller.scrollHeight, behavior: "smooth" });
   }
 </script>
 
 <div class="panel">
-  <div class="head">
-    <span class="title">± Diff</span>
+  <div class="header">
+    <Icon name="plus.forwardslash.minus" size={14} />
+    <span class="title">Diff</span>
+    <span class="spacer"></span>
     {#if $changes.length > 0}
       <span class="count">{$changes.length}</span>
     {/if}
   </div>
-  <div class="body">
-    {#if $changes.length === 0}
-      <div class="empty">No changes yet</div>
-    {:else}
+  {#if $changes.length === 0}
+    <div class="empty">
+      <span class="empty-icon"><Icon name="doc.text.magnifyingglass" size={30} weight={1.4} /></span>
+      <span class="empty-text">No changes yet</span>
+    </div>
+  {:else}
+    <div class="list" bind:this={scroller}>
       {#each $changes as change (change.id)}
-        <div class="card">
-          <button class="card-head" on:click={() => toggle(change)}>
-            <span class="chevron">{isOpen(change) ? "▾" : "▸"}</span>
-            <span class="name">{change.name}</span>
-            <span class="stats">
-              {#if change.adds > 0}<span class="adds">+{change.adds}</span>{/if}
-              {#if change.removes > 0}<span class="removes">-{change.removes}</span>{/if}
-            </span>
-            <span class="badge" class:add={change.kind === "file_write"}>
-              {change.kind === "file_write" ? "A" : "M"}
-            </span>
-          </button>
-          {#if isOpen(change)}
-            <DiffView {change} />
-          {/if}
-        </div>
+        <DiffCard {change} expandedByDefault={change.id === lastId} />
       {/each}
-    {/if}
-  </div>
+    </div>
+  {/if}
 </div>
 
 <style>
   .panel {
-    width: 420px;
-    flex-shrink: 0;
-    border-left: 1px solid var(--border);
-    background: var(--bg-panel);
+    flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
-    min-height: 0;
   }
 
-  .head {
+  .header {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 12px 14px;
-    border-bottom: 1px solid var(--border);
+    gap: 6px;
+    padding: 14px;
+    border-bottom: 1px solid var(--separator);
   }
 
   .title {
-    font-weight: 600;
-    font-size: 14px;
+    font-size: var(--headline);
+    font-weight: 700;
+  }
+
+  .spacer {
+    flex: 1;
   }
 
   .count {
-    font-size: 11px;
-    color: var(--text-dim);
-    background: var(--bg-card);
+    font-size: var(--caption);
+    font-variant-numeric: tabular-nums;
+    color: var(--secondary);
+    padding: 2px 7px;
     border-radius: 999px;
-    padding: 1px 8px;
-  }
-
-  .body {
-    flex: 1;
-    overflow-y: auto;
-    padding: 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+    background: var(--quaternary);
   }
 
   .empty {
-    color: var(--text-dim);
-    font-size: 13px;
-    text-align: center;
-    margin-top: 40px;
-  }
-
-  .card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    overflow: hidden;
-  }
-
-  .card-head {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    width: 100%;
-    padding: 8px 10px;
-    font-size: 12px;
-    text-align: left;
-  }
-
-  .chevron {
-    color: var(--text-dim);
-    font-size: 10px;
-  }
-
-  .name {
     flex: 1;
-    min-width: 0;
-    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .stats {
     display: flex;
-    gap: 6px;
-    font-family: ui-monospace, monospace;
-    font-size: 11px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
   }
 
-  .adds {
-    color: var(--ok);
+  .empty-icon {
+    color: var(--tertiary);
   }
 
-  .removes {
-    color: var(--danger);
+  .empty-text {
+    font-size: var(--callout);
+    color: var(--secondary);
   }
 
-  .badge {
-    font-size: 10px;
-    font-weight: 700;
-    color: white;
-    background: #4f8ef7;
-    border-radius: 4px;
-    padding: 1px 5px;
-  }
-
-  .badge.add {
-    background: var(--ok);
+  .list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
   }
 </style>

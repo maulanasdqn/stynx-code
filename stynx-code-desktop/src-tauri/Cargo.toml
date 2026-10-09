@@ -10,7 +10,8 @@ repository = "https://github.com/maulanasdqn/stynx-code"
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [] }
+tauri = { version = "2", features = ["macos-private-api"] }
+base64 = { workspace = true }
 reqwest = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
@@ -25,3 +26,4 @@ stynx-code-tools = { workspace = true }
 stynx-code-types = { workspace = true }
 stynx-code-commands = { workspace = true }
 stynx-code-truncus = { workspace = true }
+tauri-plugin-dialog = "2"

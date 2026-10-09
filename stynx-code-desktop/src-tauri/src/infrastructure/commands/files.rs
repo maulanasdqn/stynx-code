@@ -17,6 +17,36 @@ pub async fn read_file(path: String) -> Result<String, String> {
     Ok(String::from_utf8_lossy(capped).to_string())
 }
 
+const MAX_IMAGE_BYTES: usize = 20 * 1024 * 1024;
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImageFile {
+    pub media_type: String,
+    pub data: String,
+}
+
+/// Reads an image picked from the native open panel as base64 for the composer.
+#[tauri::command]
+pub async fn read_image(path: String) -> Result<ImageFile, String> {
+    use base64::Engine;
+    let bytes = tokio::fs::read(&path).await.map_err(|error| error.to_string())?;
+    if bytes.len() > MAX_IMAGE_BYTES {
+        return Err("image is larger than 20 MB".to_string());
+    }
+    let extension = path.rsplit('.').next().unwrap_or("").to_ascii_lowercase();
+    let media_type = match extension.as_str() {
+        "jpg" | "jpeg" => "image/jpeg",
+        "gif" => "image/gif",
+        "webp" => "image/webp",
+        _ => "image/png",
+    };
+    Ok(ImageFile {
+        media_type: media_type.to_string(),
+        data: base64::engine::general_purpose::STANDARD.encode(bytes),
+    })
+}
+
 const MAX_INDEX_ENTRIES: usize = 3000;
 const IGNORED_DIRS: [&str; 8] =
     ["node_modules", "target", ".git", "build", "DerivedData", "dist", ".next", "gen"];

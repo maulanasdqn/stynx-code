@@ -1,20 +1,21 @@
 import { get } from "svelte/store";
 import { references, status } from "./stores.js";
-import { fetchReference } from "./api.js";
+import { fetchReference, readFile } from "./api.js";
 
 const MAX_CHARS = 60_000;
 let counter = 0;
 let dirty = false;
 
-export function addReferenceFiles(files) {
-  for (const file of files) {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const text = typeof reader.result === "string" ? reader.result.slice(0, MAX_CHARS) : "";
-      push(file.name, file.name, looksBinary(text) ? "" : text);
-    };
-    reader.onerror = () => push(file.name, file.name, "");
-    reader.readAsText(file);
+export async function addReferencePaths(paths) {
+  for (const path of paths) {
+    const name = path.split("/").pop() ?? path;
+    let text = "";
+    try {
+      text = (await readFile(path)).slice(0, MAX_CHARS);
+    } catch {
+      /* keep it listed with no extracted text */
+    }
+    push(name, path, looksBinary(text) ? "" : text);
   }
 }
 

@@ -2,11 +2,13 @@
   import { parseMarkdown } from "../lib/markdown.js";
 
   export let raw;
+  export let size = "body";
+  export let dim = false;
 
   $: blocks = parseMarkdown(raw);
 </script>
 
-<div class="markdown">
+<div class="markdown selectable {size}" class:dim>
   {#each blocks as block}
     {#if block.kind === "code"}
       <pre>{block.text}</pre>
@@ -43,10 +45,18 @@
   .markdown {
     display: flex;
     flex-direction: column;
-    gap: 2px;
-    font-size: 14px;
-    line-height: 1.55;
+    gap: 6px;
+    font-size: var(--body);
+    line-height: 1.45;
     min-width: 0;
+  }
+
+  .markdown.callout {
+    font-size: var(--callout);
+  }
+
+  .markdown.dim {
+    color: var(--secondary);
   }
 
   .text,
@@ -56,12 +66,12 @@
   }
 
   .heading {
+    font-size: var(--headline);
     font-weight: 600;
-    margin-top: 6px;
   }
 
   .heading.big {
-    font-size: 16px;
+    font-size: var(--title3);
   }
 
   .listrow {
@@ -70,7 +80,7 @@
   }
 
   .marker {
-    color: var(--text-dim);
+    color: var(--secondary);
     flex-shrink: 0;
     font-variant-numeric: tabular-nums;
   }
@@ -82,63 +92,62 @@
 
   hr {
     border: none;
-    border-top: 1px solid var(--border);
-    margin: 8px 0;
+    border-top: 1px solid var(--separator);
+    margin: 4px 0;
   }
 
   .blank {
-    height: 6px;
+    height: 2px;
   }
 
   .markdown :global(code) {
-    background: var(--bg-card);
-    border-radius: 4px;
-    padding: 1px 5px;
-    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-    font-size: 12.5px;
+    font-family: var(--mono);
+    font-size: 0.95em;
   }
 
   .markdown :global(a) {
     color: var(--accent);
+    text-decoration: none;
+  }
+
+  pre,
+  .table-wrap {
+    background: var(--text-bg);
+    border: 1px solid color-mix(in srgb, var(--secondary) 18%, transparent);
+    border-radius: 8px;
+    padding: 10px;
   }
 
   pre {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 10px 12px;
-    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-    font-size: 12.5px;
-    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: var(--callout);
     white-space: pre-wrap;
     word-break: break-word;
-    margin: 4px 0;
   }
 
   .table-wrap {
     overflow-x: auto;
-    margin: 4px 0;
   }
 
   table {
     border-collapse: collapse;
-    background: var(--bg-card);
-    border-radius: 8px;
-    font-size: 13px;
+    font-size: var(--callout);
   }
 
   th,
   td {
     text-align: left;
-    padding: 6px 12px;
-    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    padding: 3px 16px 3px 0;
   }
 
   th {
     font-weight: 600;
+    border-bottom: 1px solid var(--separator);
+    padding-bottom: 6px;
   }
 
-  tr:last-child td {
-    border-bottom: none;
+  tbody tr:first-child td {
+    padding-top: 6px;
   }
 </style>

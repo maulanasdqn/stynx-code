@@ -1,17 +1,45 @@
 <script>
   import { get } from "svelte/store";
+  import { tick } from "svelte";
+  import Icon from "./icon.svelte";
   import { isStreaming, composerDraft, pendingImages } from "../lib/stores.js";
   import { send } from "../lib/messaging.js";
   import { cancel } from "../lib/api.js";
   import { historyUp, historyDown } from "../lib/prompt-history.js";
-  import { imagesFromPaste, addImageFiles } from "../lib/images.js";
+  import { imagesFromPaste, addImagePaths } from "../lib/images.js";
   import { addReferenceFromUrl } from "../lib/references.js";
+  import { pickFiles } from "../lib/native.js";
+  import { liquid } from "../lib/motion.js";
   import AttachmentsBar from "./attachments-bar.svelte";
   import MentionPopup from "./mention-popup.svelte";
 
-  let fileInput;
+  const LINE_HEIGHT = 18;
+  const MAX_LINES = 14;
+
+  let textarea;
+
+  const sendable = (streaming, draft, images) =>
+    !streaming && (draft.trim().length > 0 || images.length > 0);
+
+  $: canSend = sendable($isStreaming, $composerDraft, $pendingImages);
+  $: $composerDraft, autosize();
+
+  async function autosize() {
+    await tick();
+    if (!textarea) return;
+    // Measure at `auto` with transitions off, then glide from the old height.
+    const from = textarea.offsetHeight;
+    textarea.style.transition = "none";
+    textarea.style.height = "auto";
+    const to = Math.min(textarea.scrollHeight, LINE_HEIGHT * MAX_LINES);
+    textarea.style.height = `${from}px`;
+    void textarea.offsetHeight;
+    textarea.style.transition = "";
+    textarea.style.height = `${to}px`;
+  }
 
   function submit() {
+    if (!sendable(get(isStreaming), get(composerDraft), get(pendingImages))) return;
     const text = $composerDraft;
     const images = get(pendingImages);
     $composerDraft = "";
@@ -20,7 +48,7 @@
   }
 
   function onKeydown(event) {
-    if (event.key === "Enter" && !event.shiftKey) {
+    if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
       event.preventDefault();
       submit();
     } else if (event.key === "ArrowUp") {
@@ -50,112 +78,114 @@
     }
   }
 
-  function onAttach(event) {
-    addImageFiles([...event.target.files]);
-    event.target.value = "";
+  async function attach() {
+    addImagePaths(await pickFiles({ title: "Attach", images: true }));
   }
 </script>
 
-<div class="composer">
+<div class="composer glass panel">
   <MentionPopup />
   <AttachmentsBar />
-  <div class="input-row">
-    <textarea
-      bind:value={$composerDraft}
-      on:keydown={onKeydown}
-      on:paste={onPaste}
-      placeholder="Ask stynx…"
-      rows="3"
-      spellcheck="false"
-    ></textarea>
-    <div class="actions">
-      <button class="attach" on:click={() => fileInput.click()} title="Attach image">📎</button>
-      <input
-        type="file"
-        accept="image/*"
-        multiple
-        bind:this={fileInput}
-        on:change={onAttach}
-        hidden
-      />
-      {#if $isStreaming}
-        <button class="stop" on:click={() => cancel()} title="Stop">■</button>
-      {:else}
-        <button
-          class="go"
-          on:click={submit}
-          disabled={!$composerDraft.trim() && $pendingImages.length === 0}
-          title="Send">↑</button
-        >
-      {/if}
-    </div>
+  <textarea
+    bind:this={textarea}
+    bind:value={$composerDraft}
+    on:keydown={onKeydown}
+    on:paste={onPaste}
+    placeholder="Ask stynx…"
+    rows="1"
+    spellcheck="false"
+  ></textarea>
+  <div class="actions">
+    <button class="attach" title="Attach image" on:click={attach}>
+      <Icon name="paperclip" size={16} weight={1.7} />
+    </button>
+    <span class="spacer"></span>
+    {#if $isStreaming}
+      <button class="round stop" title="Stop" on:click={() => cancel()} in:liquid={{ y: 0, scale: 0.5, duration: 560 }}>
+        <Icon name="stop.circle.hierarchical" size={28} />
+      </button>
+    {:else}
+      <button
+        class="round"
+        class:ready={canSend}
+        title="Send"
+        disabled={!canSend}
+        on:click={submit}
+        in:liquid={{ y: 0, scale: 0.5, duration: 560 }}
+      >
+        <Icon name="arrow.up.circle.hierarchical" size={28} />
+      </button>
+    {/if}
   </div>
 </div>
 
 <style>
   .composer {
     margin: 8px 16px 14px;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 10px 12px;
+    padding: 14px;
+    border-radius: 22px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
+    transition:
+      box-shadow 0.45s var(--smooth),
+      transform 0.6s var(--spring);
   }
 
-  .input-row {
-    display: flex;
-    align-items: flex-end;
-    gap: 10px;
+  /* Focus: the slab lifts and its rim catches more light. */
+  .composer:focus-within {
+    transform: translateY(-1px);
+    box-shadow:
+      0 10px 32px rgba(0, 0, 0, 0.24),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }
 
   textarea {
-    flex: 1;
+    transition: height 0.32s var(--smooth);
     background: none;
     border: none;
     resize: none;
-    max-height: 200px;
+    font-size: var(--body);
+    line-height: 18px;
+    min-height: 24px;
+    padding: 0;
+    overflow-y: auto;
+  }
+
+  textarea::placeholder {
+    color: var(--tertiary);
   }
 
   .actions {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
   }
 
-  .actions button {
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
-    font-size: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  .spacer {
+    flex: 1;
   }
 
   .attach {
-    font-size: 14px;
-    color: var(--text-dim);
+    color: var(--secondary);
+    display: flex;
   }
 
-  .attach:hover {
-    background: var(--accent-soft);
+  .round {
+    display: flex;
+    color: var(--secondary);
   }
 
-  .go {
-    background: var(--accent);
-    color: white;
+  .round:disabled {
+    opacity: 1;
   }
 
-  .go:disabled {
-    background: var(--bg-panel);
-    color: var(--text-dim);
+  .round.ready {
+    color: var(--accent);
+    filter: drop-shadow(0 2px 6px rgba(var(--accent-rgb), 0.45));
   }
 
-  .stop {
-    background: var(--danger);
-    color: white;
-    font-size: 12px;
+  .round.stop {
+    color: var(--red);
   }
 </style>

@@ -12,16 +12,31 @@
   "app": {
     "windows": [
       {
+        "label": "main",
         "title": "Stynx",
-        "width": 1200,
-        "height": 780,
+        "width": 1280,
+        "height": 800,
         "minWidth": 860,
-        "minHeight": 560
+        "minHeight": 560,
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true,
+        "transparent": true,
+        "trafficLightPosition": {
+          "x": 20,
+          "y": 26
+        },
+        "windowEffects": {
+          "effects": [
+            "sidebar"
+          ],
+          "state": "followsWindowActiveState"
+        }
       }
     ],
     "security": {
       "csp": null
-    }
+    },
+    "macOSPrivateApi": true
   },
   "bundle": {
     "active": true,

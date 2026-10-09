@@ -54,7 +54,11 @@ function reduce(event) {
         tool.running = false;
         tool.isError = event.isError;
         if (!tool.detail) tool.detail = event.output.slice(0, TOOL_DETAIL_CHARS);
-        if (tool.name === "file_write") tool.badge = "A";
+        if (tool.name === "file_write") {
+          tool.badge = "A";
+          const lines = event.output.split(" ").find((word) => /^\d+$/.test(word));
+          if (lines) tool.stat = `+${lines}`;
+        }
         if (tool.name === "file_edit") tool.badge = "M";
         completedToolId = tool.toolId;
       });

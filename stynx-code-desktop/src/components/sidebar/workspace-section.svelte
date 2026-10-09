@@ -1,102 +1,96 @@
 <script>
-  import { info, isStreaming } from "../../lib/stores.js";
+  import Icon from "../icon.svelte";
+  import { info, status } from "../../lib/stores.js";
   import { recentWorkspaces, forgetWorkspace } from "../../lib/workspaces.js";
+  import { pickFolder, popupMenu, confirmDestructive } from "../../lib/native.js";
 
   export let onOpenWorkspace;
 
-  let draft = "";
   let recents = recentWorkspaces();
 
-  $: if ($info) {
-    draft = $info.workspacePath;
-    recents = recentWorkspaces();
+  $: if ($info) recents = recentWorkspaces();
+  $: current = $info?.workspacePath;
+
+  const lastComponent = (path) => path.split("/").filter(Boolean).pop() ?? path;
+
+  async function addWorkspace() {
+    try {
+      const path = await pickFolder();
+      if (path) onOpenWorkspace(path, null);
+    } catch (error) {
+      $status = `Open panel failed: ${error}`;
+    }
   }
 
-  function shortName(path) {
-    return path.split("/").filter(Boolean).pop() ?? path;
+  async function remove(path) {
+    const ok = await confirmDestructive(
+      `Remove "${lastComponent(path)}" from workspace list?`,
+      "This only removes it from the list. The folder on disk is not deleted.",
+      "Remove",
+    );
+    if (ok) recents = forgetWorkspace(path);
   }
 
-  function forget(path) {
-    recents = forgetWorkspace(path);
+  function contextMenu(event, path) {
+    event.preventDefault();
+    popupMenu(
+      [
+        { text: "Open", action: () => onOpenWorkspace(path, null) },
+        { text: "Remove from list", action: () => remove(path) },
+      ],
+      event,
+    );
   }
 </script>
 
 <section>
-  <h3 class="side-title">Workspace</h3>
+  <div class="sb-header">Workspace</div>
   {#each recents as path (path)}
-    <div class="recent">
-      <button
-        class="open"
-        class:current={path === $info?.workspacePath}
-        title={path}
-        on:click={() => onOpenWorkspace(path, null)}
-        disabled={$isStreaming}
-      >
-        <span class="folder">{path === $info?.workspacePath ? "📂" : "📁"}</span>
-        <span class="name">{shortName(path)}</span>
-      </button>
-      <button class="forget" title="Remove from list" on:click={() => forget(path)}>✕</button>
-    </div>
-  {/each}
-  <div class="side-row">
-    <input bind:value={draft} placeholder="/path/to/project" spellcheck="false" />
     <button
-      class="btn-primary"
-      on:click={() => onOpenWorkspace(draft.trim() || null, null)}
-      disabled={$isStreaming}>Open</button
+      class="sb-row"
+      title={path === current ? `${path} · running` : path}
+      on:click={() => onOpenWorkspace(path, null)}
+      on:contextmenu={(event) => contextMenu(event, path)}
     >
-  </div>
+      <span class="folder" class:current={path === current}>
+        <Icon name={path === current ? "folder.fill" : "folder"} size={13} />
+      </span>
+      <span class="name ellipsis" class:current={path === current}>{lastComponent(path)}</span>
+      {#if path === current}<span class="dot"></span>{/if}
+    </button>
+  {/each}
+  <button class="sb-row" on:click={addWorkspace}>
+    <span class="sb-label-icon"><Icon name="plus.rectangle.on.folder" size={15} /></span>
+    Add workspace
+  </button>
 </section>
 
 <style>
-  section {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .recent {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-
-  .open {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 5px 8px;
-    border-radius: 8px;
-    font-size: 13px;
-  }
-
-  .open:hover {
-    background: var(--accent-soft);
-  }
-
-  .open.current .name {
-    font-weight: 600;
-  }
-
   .folder {
-    font-size: 12px;
+    color: var(--secondary);
+    width: 16px;
+    display: flex;
+    justify-content: center;
+  }
+
+  .folder.current {
+    color: var(--accent);
   }
 
   .name {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
   }
 
-  .forget {
-    color: var(--text-dim);
-    font-size: 11px;
-    padding: 4px;
+  .name.current {
+    font-weight: 600;
   }
 
-  .forget:hover {
-    color: var(--danger);
+  .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
   }
 </style>

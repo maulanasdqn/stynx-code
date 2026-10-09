@@ -1,4 +1,5 @@
 <script>
+  import Icon from "./icon.svelte";
   import { pendingImages } from "../lib/stores.js";
   import { removeImage, dataUrl } from "../lib/images.js";
 </script>
@@ -8,7 +9,9 @@
     {#each $pendingImages as image (image.id)}
       <div class="thumb">
         <img src={dataUrl(image)} alt="attachment" />
-        <button on:click={() => removeImage(image.id)} title="Remove">✕</button>
+        <button on:click={() => removeImage(image.id)} title="Remove">
+          <Icon name="xmark.circle.fill" size={14} />
+        </button>
       </div>
     {/each}
   </div>
@@ -18,8 +21,14 @@
   .strip {
     display: flex;
     gap: 8px;
+    height: 62px;
+    align-items: flex-end;
     overflow-x: auto;
-    padding: 2px;
+    padding: 0 6px 0 2px;
+  }
+
+  .strip::-webkit-scrollbar {
+    display: none;
   }
 
   .thumb {
@@ -32,20 +41,16 @@
     height: 54px;
     object-fit: cover;
     border-radius: 8px;
+    display: block;
   }
 
   .thumb button {
     position: absolute;
-    top: -6px;
-    right: -6px;
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: rgba(0, 0, 0, 0.7);
-    color: white;
-    font-size: 10px;
+    top: -5px;
+    right: -5px;
     display: flex;
-    align-items: center;
-    justify-content: center;
+    color: rgba(0, 0, 0, 0.6);
+    background: radial-gradient(circle, white 40%, transparent 42%);
+    border-radius: 50%;
   }
 </style>

@@ -1,6 +1,9 @@
 <script>
+  import Icon from "./icon.svelte";
   import Markdown from "./markdown.svelte";
-  import ToolCard from "./tool-card.svelte";
+  import ActionCard from "./action-card.svelte";
+  import CrossWorkspaceCard from "./cross-workspace-card.svelte";
+  import ThinkingView from "./thinking-view.svelte";
   import { dataUrl } from "../lib/images.js";
 
   export let item;
@@ -17,30 +20,39 @@
         </div>
       {/if}
       {#if item.text}
-        <div class="user-bubble">{item.text}</div>
+        <div class="bubble selectable">{item.text}</div>
       {/if}
-      {#if item.referenceCount}
-        <div class="ref-note">📄 {item.referenceCount} reference{item.referenceCount === 1 ? "" : "s"}</div>
+      {#if item.referenceCount > 0}
+        <div class="refs">
+          <Icon name="doc.badge.plus" size={11} />
+          {item.referenceCount} reference{item.referenceCount === 1 ? "" : "s"}
+        </div>
       {/if}
     </div>
   </div>
 {:else if item.role === "assistant"}
   <div class="assistant">
-    <div class="label">Stynx</div>
+    <div class="role">Stynx</div>
     <Markdown raw={item.text} />
   </div>
 {:else if item.role === "thinking"}
-  <details class="thinking">
-    <summary>Thinking…</summary>
-    <div class="thinking-body">{item.text}</div>
-  </details>
+  <ThinkingView text={item.text} />
 {:else if item.role === "tool"}
-  <ToolCard tool={item.tool} />
+  {#if item.tool.name === "message_workspace"}
+    <CrossWorkspaceCard tool={item.tool} incoming={false} />
+  {:else if item.tool.name === "incoming_workspace"}
+    <CrossWorkspaceCard tool={item.tool} incoming={true} />
+  {:else}
+    <ActionCard tool={item.tool} />
+  {/if}
 {:else if item.role === "compact"}
   <div class="compact">
-    <hr />
-    <span>Context compacted · {item.originalTurns} turns summarised</span>
-    <hr />
+    <span class="rule"></span>
+    <span class="compact-label">
+      <Icon name="arrow.counterclockwise" size={10} />
+      Context compacted · {item.originalTurns} turns summarised
+    </span>
+    <span class="rule"></span>
   </div>
 {/if}
 
@@ -48,6 +60,7 @@
   .user-row {
     display: flex;
     justify-content: flex-end;
+    padding-left: 60px;
   }
 
   .user-stack {
@@ -55,14 +68,12 @@
     flex-direction: column;
     align-items: flex-end;
     gap: 6px;
-    max-width: 70%;
+    min-width: 0;
   }
 
   .user-images {
     display: flex;
     gap: 8px;
-    flex-wrap: wrap;
-    justify-content: flex-end;
   }
 
   .user-images img {
@@ -72,63 +83,59 @@
     border-radius: 12px;
   }
 
-  .ref-note {
-    font-size: 11px;
-    color: var(--text-dim);
-  }
-
-  .user-bubble {
-    background: var(--accent);
+  .bubble {
+    background: rgba(var(--accent-rgb), 0.9);
     color: white;
     padding: 9px 14px;
     border-radius: 16px;
-    font-size: 14px;
+    font-size: var(--body);
+    line-height: 1.4;
     white-space: pre-wrap;
     word-break: break-word;
+  }
+
+  .refs {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: var(--caption);
+    color: var(--secondary);
   }
 
   .assistant {
     display: flex;
     flex-direction: column;
     gap: 4px;
-    max-width: 100%;
+    min-width: 0;
   }
 
-  .label {
-    font-size: 10px;
-    letter-spacing: 0.08em;
+  .role {
+    font-size: var(--caption);
+    font-weight: 600;
+    letter-spacing: 0.6px;
     text-transform: uppercase;
-    color: var(--text-dim);
-  }
-
-  .thinking {
-    font-size: 13px;
-    color: var(--text-dim);
-  }
-
-  .thinking summary {
-    cursor: pointer;
-    font-size: 12px;
-  }
-
-  .thinking-body {
-    white-space: pre-wrap;
-    padding: 6px 0 0 12px;
-    border-left: 2px solid var(--border);
-    margin-top: 4px;
+    color: var(--secondary);
   }
 
   .compact {
     display: flex;
     align-items: center;
-    gap: 10px;
-    color: var(--text-dim);
-    font-size: 11px;
+    gap: 8px;
+    padding: 4px 0;
   }
 
-  .compact hr {
+  .rule {
     flex: 1;
-    border: none;
-    border-top: 1px solid var(--border);
+    height: 1px;
+    background: var(--quaternary);
+  }
+
+  .compact-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+    font-size: var(--caption);
+    color: var(--tertiary);
   }
 </style>

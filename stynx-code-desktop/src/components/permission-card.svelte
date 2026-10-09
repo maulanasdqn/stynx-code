@@ -1,79 +1,81 @@
 <script>
+  import Icon from "./icon.svelte";
+  import Markdown from "./markdown.svelte";
   import { respondPermission } from "../lib/api.js";
   import { permissionPrompt } from "../lib/stores.js";
 
   export let prompt;
 
-  async function choose(choice) {
+  async function respond(choice) {
     await respondPermission(prompt.id, choice);
     $permissionPrompt = null;
   }
+
+  // .keyboardShortcut(.defaultAction) on "Allow Once" — unless the user is typing.
+  function keydown(event) {
+    if (event.key !== "Enter" || event.target.closest("textarea, input")) return;
+    event.preventDefault();
+    respond("allow_once");
+  }
 </script>
 
+<svelte:window on:keydown={keydown} />
+
 <div class="card">
-  <div class="head">
-    <span class="icon">🔐</span>
-    <span class="tool">{prompt.toolName}</span>
-  </div>
-  <pre class="description">{prompt.description}</pre>
+  <div class="headline"><Icon name="lock.shield" size={13} /> Permission required</div>
+  <div class="tool mono">{prompt.toolName}</div>
+  {#if prompt.description}
+    <div class="description">
+      <Markdown raw={prompt.description} />
+    </div>
+  {/if}
   <div class="actions">
-    <button class="allow" on:click={() => choose("allow_once")}>Allow once</button>
-    <button class="always" on:click={() => choose("allow_always")}>Always allow</button>
-    <button class="deny" on:click={() => choose("deny")}>Deny</button>
+    <button class="push" on:click={() => respond("deny")}>Deny</button>
+    <span class="spacer"></span>
+    <button class="push" on:click={() => respond("allow_always")}>Allow Always</button>
+    <button class="push prominent" on:click={() => respond("allow_once")}>Allow Once</button>
   </div>
 </div>
 
 <style>
   .card {
-    background: var(--bg-card);
-    border: 1px solid var(--accent);
-    border-radius: 14px;
-    padding: 14px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
+    padding: 14px;
+    border-radius: 12px;
+    background: rgba(var(--fg-rgb), 0.05);
+    border: 1px solid color-mix(in srgb, var(--orange) 40%, transparent);
   }
 
-  .head {
+  .headline {
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-    font-size: 13px;
+    gap: 6px;
+    font-size: var(--subheadline);
+    font-weight: 600;
+  }
+
+  .tool {
+    font-size: var(--callout);
+    color: var(--secondary);
   }
 
   .description {
-    font-size: 12px;
-    color: var(--text-dim);
-    white-space: pre-wrap;
-    word-break: break-word;
     max-height: 180px;
     overflow-y: auto;
+    padding: 10px;
+    border-radius: 8px;
+    background: var(--text-bg);
   }
 
   .actions {
     display: flex;
+    align-items: center;
     gap: 8px;
   }
 
-  .actions button {
-    border-radius: 8px;
-    padding: 6px 14px;
-    font-size: 13px;
-  }
-
-  .allow {
-    background: var(--accent);
-    color: white;
-  }
-
-  .always {
-    background: var(--accent-soft);
-    color: var(--accent);
-  }
-
-  .deny {
-    background: rgba(242, 109, 109, 0.15);
-    color: var(--danger);
+  .spacer {
+    flex: 1;
   }
 </style>

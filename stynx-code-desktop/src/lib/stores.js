@@ -15,7 +15,8 @@ export const messageQueue = writable([]);
 export const pendingImages = writable([]);
 export const composerDraft = writable("");
 export const changes = writable([]);
-export const showFiles = writable(false);
+export const showFiles = writable(true);
+export const showSidebar = writable(true);
 export const references = writable([]);
 
 let counter = 0;

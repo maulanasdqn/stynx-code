@@ -1,0 +1,162 @@
+/* Liquid Glass (macOS 26) for the webview: frosted body, specular rim,
+   pointer-tracked highlight, and spring-driven press/hover. */
+:root {
+  --spring: cubic-bezier(0.34, 1.4, 0.5, 1);
+  --smooth: cubic-bezier(0.22, 1, 0.36, 1);
+  --glass-tint: rgba(255, 255, 255, 0.5);
+  --glass-tint-2: rgba(255, 255, 255, 0.28);
+  --glass-rim: rgba(255, 255, 255, 0.95);
+  --glass-rim-2: rgba(0, 0, 0, 0.06);
+  --glass-shadow: 0 8px 28px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08);
+  --glass-shine: rgba(255, 255, 255, 0.55);
+  --panel-tint: rgba(255, 255, 255, 0.55);
+  --panel-tint-2: rgba(255, 255, 255, 0.4);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --glass-tint: rgba(255, 255, 255, 0.075);
+    --glass-tint-2: rgba(255, 255, 255, 0.025);
+    --glass-rim: rgba(255, 255, 255, 0.32);
+    --glass-rim-2: rgba(255, 255, 255, 0.05);
+    --glass-shadow: 0 10px 34px rgba(0, 0, 0, 0.38), 0 1px 3px rgba(0, 0, 0, 0.3);
+    --glass-shine: rgba(255, 255, 255, 0.07);
+    --panel-tint: rgba(255, 255, 255, 0.035);
+    --panel-tint-2: rgba(255, 255, 255, 0.015);
+  }
+}
+
+.glass {
+  --mx: 30%;
+  --my: 0%;
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(70% 120% at var(--mx) var(--my), var(--glass-shine), transparent 70%),
+    linear-gradient(180deg, var(--glass-tint), var(--glass-tint-2));
+  backdrop-filter: blur(22px) saturate(1.9) brightness(1.04);
+  -webkit-backdrop-filter: blur(22px) saturate(1.9) brightness(1.04);
+  border: none;
+  box-shadow:
+    var(--glass-shadow),
+    inset 0 1px 0.5px rgba(255, 255, 255, 0.22),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.08);
+  transition:
+    transform 0.55s var(--spring),
+    box-shadow 0.4s var(--smooth),
+    background-position 0.3s var(--smooth);
+}
+
+/* Specular rim: bright where light hits the top edge, fading round the sides. */
+.glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    160deg,
+    var(--glass-rim) 0%,
+    var(--glass-rim-2) 38%,
+    var(--glass-rim-2) 62%,
+    color-mix(in srgb, var(--glass-rim) 55%, transparent) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Large surfaces (panels, composer, cards): clear glass, no moving shine,
+   just a faint top-lit tint and a hairline rim. */
+.glass.panel {
+  background: linear-gradient(180deg, var(--panel-tint), var(--panel-tint-2));
+  box-shadow:
+    0 6px 24px rgba(0, 0, 0, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.glass.panel::before {
+  opacity: 0.45;
+}
+
+/* Tappable glass squishes like a droplet and springs back. */
+.glass.interactive:hover {
+  box-shadow:
+    var(--glass-shadow),
+    0 0 0 0.5px var(--glass-rim-2),
+    inset 0 1px 0.5px rgba(255, 255, 255, 0.3);
+}
+
+.glass.interactive:active {
+  transform: scale(0.97);
+  transition-duration: 0.12s;
+}
+
+/* Buttons everywhere get spring press feedback. */
+button {
+  transition:
+    transform 0.45s var(--spring),
+    background-color 0.25s var(--smooth),
+    color 0.25s var(--smooth),
+    opacity 0.25s var(--smooth);
+}
+
+button:active:not(:disabled) {
+  transform: scale(0.94);
+  transition-duration: 0.1s;
+}
+
+/* Capsule buttons inside glass groups light up from within. */
+.glass-item {
+  border-radius: 999px;
+}
+
+.glass-item:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--glass-shine) 80%, transparent);
+}
+
+@keyframes surface {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+    filter: blur(6px);
+  }
+  40% {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+/* Busy glass: light slowly flows across the surface. */
+.glass.busy::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(100deg, transparent 30%, var(--glass-shine) 50%, transparent 70%);
+  background-size: 250% 100%;
+  animation: sheen 2.4s var(--smooth) infinite;
+  pointer-events: none;
+}
+
+@keyframes sheen {
+  from {
+    background-position: 120% 0;
+  }
+  to {
+    background-position: -120% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}

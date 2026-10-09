@@ -5,14 +5,15 @@ export function recentWorkspaces() {
   try {
     const raw = localStorage.getItem(KEY);
     const list = raw ? JSON.parse(raw) : [];
-    return Array.isArray(list) ? list : [];
+    // "/" is the cwd of a Finder-launched app, never a real project.
+    return Array.isArray(list) ? list.filter((path) => path && path !== "/") : [];
   } catch {
     return [];
   }
 }
 
 export function rememberWorkspace(path) {
-  if (!path) return recentWorkspaces();
+  if (!path || path === "/") return recentWorkspaces();
   const list = [path, ...recentWorkspaces().filter((p) => p !== path)].slice(0, MAX);
   try {
     localStorage.setItem(KEY, JSON.stringify(list));

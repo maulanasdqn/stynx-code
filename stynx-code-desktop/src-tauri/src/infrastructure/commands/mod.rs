@@ -1,3 +1,4 @@
+pub mod dialogs;
 pub mod files;
 pub mod history;
 pub mod messaging;

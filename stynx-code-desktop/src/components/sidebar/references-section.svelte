@@ -1,80 +1,58 @@
 <script>
+  import Icon from "../icon.svelte";
   import { references } from "../../lib/stores.js";
-  import { addReferenceFiles, addReferenceFromUrl, removeReference } from "../../lib/references.js";
+  import { addReferencePaths, removeReference } from "../../lib/references.js";
+  import { pickFiles } from "../../lib/native.js";
 
-  let fileInput;
-  let urlDraft = "";
-
-  function onPick(event) {
-    addReferenceFiles([...event.target.files]);
-    event.target.value = "";
+  async function addReference() {
+    addReferencePaths(await pickFiles({ title: "Choose reference documents" }));
   }
 
-  async function addUrl() {
-    if (await addReferenceFromUrl(urlDraft)) urlDraft = "";
+  function iconFor(name) {
+    const ext = name.split(".").pop().toLowerCase();
+    if (ext === "pdf") return "doc.richtext";
+    if (ext === "doc" || ext === "docx") return "doc.text";
+    if (ext === "md" || ext === "txt") return "doc.plaintext";
+    return "doc";
   }
 </script>
 
 <section>
-  <h3 class="side-title">References</h3>
-  <button class="btn-ghost" on:click={() => fileInput.click()}>＋ Add reference</button>
-  <input type="file" multiple bind:this={fileInput} on:change={onPick} hidden />
-  <div class="side-row">
-    <input bind:value={urlDraft} placeholder="https://…" spellcheck="false" />
-    <button class="btn-primary" on:click={addUrl} disabled={!urlDraft.trim()}>Fetch</button>
-  </div>
+  <div class="sb-header">References</div>
+  <button class="sb-row" on:click={addReference}>
+    <span class="sb-label-icon"><Icon name="doc.badge.plus" size={15} /></span>
+    Add reference
+  </button>
   {#each $references as doc (doc.id)}
-    <div class="ref">
-      <span class="icon">📄</span>
-      <span class="meta">
-        <span class="name">{doc.name}</span>
-        <span class="side-dim">{doc.text ? "reference" : "no text extracted"}</span>
+    <div class="sb-row" title={doc.path}>
+      <span class="glyph" class:has-text={doc.text}><Icon name={iconFor(doc.name)} size={13} /></span>
+      <span class="sb-meta">
+        <span class="sb-title ellipsis">{doc.name}</span>
+        <span class="sb-sub">{doc.text ? "reference" : "no text extracted"}</span>
       </span>
-      <button class="remove" on:click={() => removeReference(doc.id)}>✕</button>
+      <button class="remove" title="Remove" on:click={() => removeReference(doc.id)}>
+        <Icon name="xmark.circle.fill" size={14} />
+      </button>
     </div>
   {:else}
-    <div class="side-dim">No reference documents</div>
+    <div class="sb-empty">No reference documents</div>
   {/each}
 </section>
 
 <style>
-  section {
+  .glyph {
+    color: var(--secondary);
+    width: 16px;
     display: flex;
-    flex-direction: column;
-    gap: 6px;
+    justify-content: center;
   }
 
-  .ref {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 4px 2px;
-  }
-
-  .icon {
-    font-size: 12px;
-  }
-
-  .meta {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .name {
-    font-size: 13px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  .glyph.has-text {
+    color: var(--accent);
   }
 
   .remove {
-    color: var(--text-dim);
-    font-size: 11px;
-  }
-
-  .remove:hover {
-    color: var(--danger);
+    color: var(--secondary);
+    display: flex;
   }
 </style>

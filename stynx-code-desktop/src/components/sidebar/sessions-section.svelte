@@ -1,68 +1,49 @@
 <script>
+  import Icon from "../icon.svelte";
   import { sessions, isStreaming } from "../../lib/stores.js";
   import { openSession, startNewSession, removeSession } from "../../lib/session-actions.js";
+  import { popupMenu } from "../../lib/native.js";
+
+  function contextMenu(event, summary) {
+    event.preventDefault();
+    popupMenu(
+      [
+        { text: "Open", action: () => openSession(summary.id) },
+        { text: "Delete", action: () => removeSession(summary.id) },
+      ],
+      event,
+    );
+  }
 </script>
 
 <section>
-  <h3 class="side-title">Sessions</h3>
-  <button class="btn-ghost" on:click={startNewSession} disabled={$isStreaming}>
-    ＋ New conversation
+  <div class="sb-header">Sessions</div>
+  <button class="sb-row" on:click={startNewSession} disabled={$isStreaming}>
+    <span class="sb-label-icon"><Icon name="plus.bubble" size={15} /></span>
+    New conversation
   </button>
   {#each $sessions as summary (summary.id)}
-    <div class="row">
-      <button class="session" on:click={() => openSession(summary.id)}>
-        <span class="title">{summary.title || "Untitled"}</span>
-        <span class="side-dim">{summary.messageCount} messages</span>
-      </button>
-      <button class="delete" title="Delete" on:click={() => removeSession(summary.id)}>✕</button>
-    </div>
+    <button
+      class="sb-row"
+      on:click={() => openSession(summary.id)}
+      on:contextmenu={(event) => contextMenu(event, summary)}
+    >
+      <span class="glyph"><Icon name="bubble.left.and.text.bubble.right" size={13} /></span>
+      <span class="sb-meta">
+        <span class="sb-title ellipsis">{summary.title || "Untitled"}</span>
+        <span class="sb-sub">{summary.messageCount} messages</span>
+      </span>
+    </button>
   {:else}
-    <div class="side-dim">No saved sessions</div>
+    <div class="sb-empty">No saved sessions</div>
   {/each}
 </section>
 
 <style>
-  section {
+  .glyph {
+    color: var(--secondary);
+    width: 16px;
     display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .row {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-
-  .session {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    padding: 5px 8px;
-    border-radius: 8px;
-  }
-
-  .session:hover {
-    background: var(--accent-soft);
-  }
-
-  .title {
-    font-size: 13px;
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .delete {
-    color: var(--text-dim);
-    padding: 4px;
-    font-size: 11px;
-  }
-
-  .delete:hover {
-    color: var(--danger);
+    justify-content: center;
   }
 </style>

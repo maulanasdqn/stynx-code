@@ -87,3 +87,11 @@ export async function saveInternKey(envName, value) {
   if (!trimmed) return;
   interns.set(await setProviderKey(envName, trimmed));
 }
+
+export async function refreshSessions() {
+  try {
+    sessions.set(await listSessions());
+  } catch {
+    /* keep the last known list */
+  }
+}
