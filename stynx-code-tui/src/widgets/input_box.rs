@@ -22,21 +22,23 @@ impl<'a> InputBox<'a> {
 
 impl<'a> Widget for InputBox<'a> {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let border_color = if self.focused { theme::IRIS() } else { theme::OVERLAY() };
-
-        let hint = Span::styled(
-            " ↵ send  esc · ",
-            Style::default().fg(theme::SUBTLE()).add_modifier(Modifier::DIM),
-        );
+        let border_color = if self.focused { theme::BORDER_ACTIVE() } else { theme::BORDER() };
+        let key = Style::default().fg(theme::TEXT());
+        let label = Style::default().fg(theme::TEXT_MUTED());
+        let hint = Line::from(vec![
+            Span::styled(" ↵ ", key),
+            Span::styled("send  ", label),
+            Span::styled("⇧↵ ", key),
+            Span::styled("newline  ", label),
+            Span::styled("esc ", key),
+            Span::styled("stop ", label),
+        ])
+        .right_aligned();
 
         let block = Block::default()
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded)
             .border_style(Style::default().fg(border_color))
-            .title(Span::styled(
-                " › ",
-                Style::default().fg(theme::FOAM()).add_modifier(Modifier::BOLD),
-            ))
             .title_bottom(hint);
 
         let inner = block.inner(area);
@@ -49,13 +51,13 @@ impl<'a> Widget for InputBox<'a> {
 
         let lines: Vec<Line<'static>> = if buffer_lines.is_empty() {
             let hint = if self.state.suggestion.is_empty() {
-                " Type a message…".to_string()
+                " Ask stynx…".to_string()
             } else {
                 format!(" {}", self.state.suggestion)
             };
             vec![Line::from(Span::styled(
                 hint,
-                Style::default().fg(theme::MUTED()).add_modifier(Modifier::ITALIC),
+                Style::default().fg(theme::TEXT_MUTED()),
             ))]
         } else {
             buffer_lines
@@ -91,7 +93,7 @@ impl<'a> Widget for InputBox<'a> {
             let right = inner.x.saturating_add(inner.width);
             let bottom = inner.y.saturating_add(inner.height);
             if cx < right && cy < bottom {
-                buf[(cx, cy)].set_style(Style::default().bg(theme::HL_HIGH()).fg(theme::TEXT()));
+                buf[(cx, cy)].set_style(Style::default().bg(theme::PRIMARY()).fg(theme::BACKGROUND()));
             }
         }
     }

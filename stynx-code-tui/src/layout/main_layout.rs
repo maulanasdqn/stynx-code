@@ -1,9 +1,9 @@
 use ratatui::layout::{Constraint, Layout, Rect};
 
 pub struct LayoutResult {
-    /// Top of the left column — the tool stream.
+    /// Lower part of the left column — the activity (tool) stream.
     pub tool_history: Option<Rect>,
-    /// Bottom of the left column — model / session info.
+    /// Top of the left column — workspace and session info.
     pub tool_info: Option<Rect>,
     pub messages: Rect,
     pub thinking: Option<Rect>,
@@ -18,10 +18,10 @@ pub struct LayoutResult {
 pub struct MainLayout;
 
 impl MainLayout {
-    pub const TOOL_HISTORY_WIDTH: u16 = 44;
+    pub const TOOL_HISTORY_WIDTH: u16 = 36;
     pub const MIN_MAIN_WIDTH: u16 = 60;
-    /// Height reserved for the model-info section at the bottom of the sidebar.
-    const INFO_HEIGHT: u16 = 9;
+    /// Height reserved for the workspace/session section at the top of the sidebar.
+    const INFO_HEIGHT: u16 = 12;
 
     pub fn split(
         area: Rect,
@@ -41,17 +41,17 @@ impl MainLayout {
             (None, area)
         };
 
-        // Split the left column: tool stream on top, model info on the bottom.
+        // Split the left column: workspace/session info on top, activity below.
         let (tool_history, tool_info) = match tool_col {
             Some(col) => {
                 let info_h = Self::INFO_HEIGHT.min(col.height.saturating_sub(3));
                 if info_h >= 4 {
                     let parts = Layout::vertical([
-                        Constraint::Min(1),
                         Constraint::Length(info_h),
+                        Constraint::Min(1),
                     ])
                     .split(col);
-                    (Some(parts[0]), Some(parts[1]))
+                    (Some(parts[1]), Some(parts[0]))
                 } else {
                     (Some(col), None)
                 }

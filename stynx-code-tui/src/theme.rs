@@ -36,6 +36,31 @@ pub struct Theme {
     pub error: Color,
 }
 
+pub const fn stynx() -> Theme {
+    let base = Color::Rgb(30, 30, 30);
+    let surface = Color::Rgb(38, 38, 40);
+    let overlay = Color::Rgb(52, 52, 55);
+    let muted = Color::Rgb(108, 108, 113);
+    let subtle = Color::Rgb(152, 152, 157);
+    let text = Color::Rgb(229, 229, 234);
+    let love = Color::Rgb(255, 69, 58);
+    let gold = Color::Rgb(255, 159, 10);
+    let rose = Color::Rgb(255, 214, 10);
+    let pine = Color::Rgb(50, 215, 75);
+    let foam = Color::Rgb(100, 210, 255);
+    let iris = Color::Rgb(10, 132, 255);
+    let hl_med = Color::Rgb(58, 58, 60);
+    let hl_high = Color::Rgb(72, 72, 74);
+    Theme {
+        id: "stynx", name: "Stynx",
+        base, surface, overlay, muted, subtle, text,
+        love, gold, rose, pine, foam, iris, hl_med, hl_high,
+        background: base, background_panel: surface, background_element: overlay,
+        background_menu: hl_med, text_muted: muted, border: hl_med, border_active: iris,
+        primary: iris, accent: foam, success: pine, warning: gold, error: love,
+    }
+}
+
 pub const fn rose_pine() -> Theme {
     let base = Color::Rgb(25, 23, 36);
     let surface = Color::Rgb(31, 29, 46);
@@ -137,13 +162,14 @@ pub const fn gruvbox_dark() -> Theme {
 }
 
 pub const THEMES: &[Theme] = &[
+    stynx(),
     rose_pine(),
     catppuccin_mocha(),
     tokyo_night(),
     gruvbox_dark(),
 ];
 
-static CURRENT: LazyLock<RwLock<Theme>> = LazyLock::new(|| RwLock::new(rose_pine()));
+static CURRENT: LazyLock<RwLock<Theme>> = LazyLock::new(|| RwLock::new(stynx()));
 
 pub fn current() -> Theme { *CURRENT.read().unwrap() }
 

@@ -96,27 +96,30 @@ fn truncate_path(s: &str, max: usize) -> String {
 
 impl<'a> Widget for ToolHistory<'a> {
     fn render(self, area: Rect, buf: &mut Buffer) {
+        buf.set_style(area, Style::default().bg(theme::BACKGROUND_PANEL()));
         let block = Block::default()
-            .borders(Borders::RIGHT)
-            .border_style(Style::default().fg(theme::OVERLAY()));
+            .borders(Borders::TOP)
+            .border_style(Style::default().fg(theme::BORDER()));
         let inner = block.inner(area);
         block.render(area, buf);
 
-        let header = Line::from(vec![
-            Span::styled("  ", Style::default()),
-            Span::styled(
-                "Tools",
-                Style::default().fg(theme::FOAM()).add_modifier(Modifier::BOLD),
-            ),
-            Span::styled(
-                if self.state.tool_history.focused { "  ●" } else { "" },
-                Style::default().fg(theme::IRIS()),
-            ),
-        ]);
-
-        let mut lines: Vec<Line<'static>> = vec![header, Line::from("")];
-
         let rows = flat_rows(self.state);
+        let tool_count = flat_tools(self.state).len();
+        let mut header_spans = vec![Span::styled(
+            "  Activity",
+            Style::default().fg(theme::TEXT_MUTED()).add_modifier(Modifier::BOLD),
+        )];
+        if tool_count > 0 {
+            header_spans.push(Span::styled(
+                format!("  {tool_count}"),
+                Style::default().fg(theme::TEXT_MUTED()),
+            ));
+        }
+        if self.state.tool_history.focused {
+            header_spans.push(Span::styled("  ●", Style::default().fg(theme::PRIMARY())));
+        }
+        let mut lines: Vec<Line<'static>> = vec![Line::from(header_spans), Line::from("")];
+
         let row_width = inner.width.saturating_sub(2) as usize;
         let name_w = 10usize;
         let summary_w = row_width.saturating_sub(name_w + 4);
@@ -141,7 +144,7 @@ impl<'a> Widget for ToolHistory<'a> {
             } else {
                 Style::default()
             };
-            let prefix = if is_selected { "▶ " } else { "  " };
+            let prefix = if is_selected { "▌ " } else { "  " };
 
             match row {
                 HistoryRow::Tool { msg, tool } => {
@@ -149,10 +152,10 @@ impl<'a> Widget for ToolHistory<'a> {
                     let (dot, dot_col) = match tool.status {
                         ToolUseStatus::Running => (
                             FRAMES[self.state.spinner_frame % FRAMES.len()].to_string(),
-                            theme::GOLD(),
+                            theme::PRIMARY(),
                         ),
-                        ToolUseStatus::Completed => ("●".into(), theme::SUCCESS()),
-                        ToolUseStatus::Error => ("●".into(), theme::ERROR()),
+                        ToolUseStatus::Completed => ("✓".into(), theme::SUCCESS()),
+                        ToolUseStatus::Error => ("✕".into(), theme::ERROR()),
                     };
                     let pretty = pretty_name(&tool.name);
                     let name_padded = format!("{:<name_w$}", pretty, name_w = name_w);
@@ -166,7 +169,7 @@ impl<'a> Widget for ToolHistory<'a> {
                         truncate_path(&tool.input_summary, summary_w)
                     };
                     lines.push(Line::from(vec![
-                        Span::styled(prefix, Style::default().fg(theme::IRIS()).add_modifier(Modifier::BOLD)),
+                        Span::styled(prefix, Style::default().fg(theme::PRIMARY()).add_modifier(Modifier::BOLD)),
                         Span::styled(format!("{dot} "), Style::default().fg(dot_col).add_modifier(Modifier::BOLD)),
                         Span::styled(name_padded, row_style.fg(theme::TEXT())),
                         Span::styled(summary, row_style.fg(theme::TEXT_MUTED())),
@@ -177,8 +180,8 @@ impl<'a> Widget for ToolHistory<'a> {
                     let text = parent.sub_progress.get(*sub).cloned().unwrap_or_default();
                     let truncated = truncate_path(&text, sub_w);
                     lines.push(Line::from(vec![
-                        Span::styled(prefix, Style::default().fg(theme::IRIS())),
-                        Span::styled("↪ ", Style::default().fg(theme::IRIS()).add_modifier(Modifier::DIM)),
+                        Span::styled(prefix, Style::default().fg(theme::PRIMARY())),
+                        Span::styled("↪ ", Style::default().fg(theme::TEXT_MUTED())),
                         Span::styled(truncated, row_style.fg(theme::SUBTLE()).add_modifier(Modifier::ITALIC)),
                     ]));
                 }
@@ -187,8 +190,8 @@ impl<'a> Widget for ToolHistory<'a> {
 
         if total == 0 {
             lines.push(Line::from(Span::styled(
-                "  no tool calls yet",
-                Style::default().fg(theme::SUBTLE()).add_modifier(Modifier::ITALIC),
+                "  No tool calls yet",
+                Style::default().fg(theme::TEXT_MUTED()),
             )));
         } else if total > visible {
             lines.push(Line::from(Span::styled(

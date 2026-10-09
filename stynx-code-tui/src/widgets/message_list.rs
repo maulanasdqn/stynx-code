@@ -68,7 +68,7 @@ impl<'a> Widget for MessageList<'a> {
                             Style::default().fg(theme::TEXT()),
                         )));
                     }
-                    stamp_role_bar(&mut lines, start, theme::FOAM());
+                    stamp_role_bar(&mut lines, start, theme::PRIMARY());
                 }
                 "error" => {
                     lines.push(Line::from(vec![
@@ -117,7 +117,7 @@ impl<'a> Widget for MessageList<'a> {
                         lines.push(Line::from(vec![
                             Span::styled(
                                 format!("  {spin} "),
-                                Style::default().fg(theme::IRIS()).add_modifier(Modifier::BOLD),
+                                Style::default().fg(theme::TEXT()).add_modifier(Modifier::BOLD),
                             ),
                             Span::styled(
                                 "thinking…",
@@ -192,7 +192,7 @@ impl<'a> Widget for MessageList<'a> {
                         i += 1;
                     }
                     let _ = in_code;
-                    stamp_role_bar(&mut lines, asst_start, theme::IRIS());
+                    stamp_role_bar(&mut lines, asst_start, theme::HL_HIGH());
                 }
             }
             lines.push(Line::from(""));
@@ -305,7 +305,7 @@ fn draw_empty_state(area: Rect, buf: &mut Buffer) {
     }
     lines.push(Line::from(Span::styled(
         pad_to(LOGO_SUBTITLE, logo_w),
-        Style::default().fg(theme::ACCENT()),
+        Style::default().fg(theme::PRIMARY()),
     )));
     lines.push(Line::from(""));
     lines.push(Line::from(Span::styled(
@@ -325,7 +325,7 @@ fn draw_empty_state(area: Rect, buf: &mut Buffer) {
         let key = format!("{:>width$}", k, width = key_w);
         let label = format!("{:<width$}", l, width = label_w);
         lines.push(Line::from(vec![
-            Span::styled(key, Style::default().fg(theme::ACCENT()).add_modifier(Modifier::BOLD)),
+            Span::styled(key, Style::default().fg(theme::PRIMARY()).add_modifier(Modifier::BOLD)),
             Span::raw("   "),
             Span::styled(label, Style::default().fg(theme::TEXT_MUTED())),
         ]));
