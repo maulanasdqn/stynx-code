@@ -51,3 +51,7 @@ export function notifyAgentEdit(path) {
   const relative = relativeToRoot(path);
   if (relative && hooks.agentEdit) hooks.agentEdit(relative);
 }
+
+export const terminalVisible = writable(false);
+export const terminals = writable([]);
+export const activeTerminal = writable(null);

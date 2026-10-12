@@ -8,3 +8,8 @@ export const ideCreate = (path, isDir) => invoke("ide_create", { path, isDir });
 export const ideRename = (from, to) => invoke("ide_rename", { from, to });
 export const ideDelete = (path) => invoke("ide_delete", { path });
 export const ideIndex = () => invoke("ide_index");
+export const terminalShells = () => invoke("terminal_shells");
+export const terminalOpen = (shell, cols, rows, onEvent) => invoke("terminal_open", { shell, cols, rows, onEvent });
+export const terminalWrite = (id, data) => invoke("terminal_write", { id, data });
+export const terminalResize = (id, cols, rows) => invoke("terminal_resize", { id, cols, rows });
+export const terminalClose = (id) => invoke("terminal_close", { id });

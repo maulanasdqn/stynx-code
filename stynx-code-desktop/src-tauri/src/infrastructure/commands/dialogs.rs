@@ -62,3 +62,18 @@ pub async fn confirm_destructive(
         });
     rx.await.map_err(|error| error.to_string())
 }
+
+#[tauri::command]
+pub fn open_external(url: String) -> Result<(), String> {
+    if !url.starts_with("http://") && !url.starts_with("https://") {
+        return Err("only http(s) links can be opened".into());
+    }
+    let program = if cfg!(target_os = "macos") {
+        "open"
+    } else if cfg!(windows) {
+        "explorer"
+    } else {
+        "xdg-open"
+    };
+    std::process::Command::new(program).arg(&url).spawn().map(|_| ()).map_err(|error| error.to_string())
+}

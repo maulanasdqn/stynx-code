@@ -1,22 +1,33 @@
 <script>
   export let onDrag;
   export let line = true;
+  export let vertical = false;
 
-  let startX = 0;
+  let start = 0;
+
+  const point = (event) => (vertical ? event.clientY : event.clientX);
 
   function down(event) {
-    startX = event.clientX;
+    start = point(event);
     event.currentTarget.setPointerCapture(event.pointerId);
   }
 
   function move(event) {
     if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
-    onDrag(event.clientX - startX);
-    startX = event.clientX;
+    onDrag(point(event) - start);
+    start = point(event);
   }
 </script>
 
-<div class="handle" class:line role="separator" aria-orientation="vertical" on:pointerdown={down} on:pointermove={move}></div>
+<div
+  class="handle"
+  class:line
+  class:vertical
+  role="separator"
+  aria-orientation={vertical ? "horizontal" : "vertical"}
+  on:pointerdown={down}
+  on:pointermove={move}
+></div>
 
 <style>
   .handle {
@@ -26,6 +37,13 @@
     cursor: col-resize;
     position: relative;
     z-index: 5;
+  }
+
+  .handle.vertical {
+    width: auto;
+    height: 7px;
+    margin: -3px 0;
+    cursor: row-resize;
   }
 
   .handle:not(.line) {

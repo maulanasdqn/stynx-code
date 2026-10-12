@@ -4,6 +4,7 @@ import { ideAttach, ideIndex } from "./ide-api.js";
 import { expanded, fileIndex, ideMessage, ideRoot, registerAgentEditHook, tree } from "./ide-stores.js";
 import { loadDir, refreshDirs } from "./file-tree.js";
 import { reloadFromDisk, resetDocuments } from "./documents.js";
+import { closeAllTerminals } from "./terminals.js";
 
 let unlisten = null;
 
@@ -11,6 +12,7 @@ export async function attachWorkspace() {
   try {
     const root = await ideAttach();
     resetDocuments();
+    await closeAllTerminals();
     tree.set(new Map());
     expanded.set(new Set([""]));
     fileIndex.set([]);

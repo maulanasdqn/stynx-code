@@ -58,6 +58,7 @@ export const ICONS = {
   "circle.fill": 'fill:<circle cx="12" cy="12" r="6"/>',
   "list.bullet.indent": '<path d="M9 6h12M9 12h12M9 18h12M4 6h.01M4 12h.01M4 18h.01"/>',
   "folder.stack": '<path d="M3 8a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M6 4h4l1.5 1.5"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
   pencil:'<path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
   terminal: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/>',
   magnifyingglass: '<circle cx="11" cy="11" r="7"/><path d="M16 16l5 5"/>',

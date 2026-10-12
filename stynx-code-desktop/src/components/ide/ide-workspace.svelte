@@ -3,12 +3,13 @@
   import ActivityRail from "./activity-rail.svelte";
   import ExplorerPanel from "./explorer-panel.svelte";
   import EditorArea from "./editor-area.svelte";
+  import TerminalPanel from "./terminal-panel.svelte";
   import QuickOpen from "./quick-open.svelte";
   import NameSheet from "./name-sheet.svelte";
   import Chat from "../chat.svelte";
   import SplitHandle from "../split-handle.svelte";
   import { info } from "../../lib/stores.js";
-  import { activeSidePanel, namePrompt, quickOpenVisible } from "../../lib/ide/ide-stores.js";
+  import { activeSidePanel, namePrompt, quickOpenVisible, terminals, terminalVisible } from "../../lib/ide/ide-stores.js";
   import { initMonaco } from "../../lib/ide/monaco-setup.js";
   import { attachWorkspace, startFsEvents } from "../../lib/ide/workspace-session.js";
   import { installKeybindings } from "../../lib/ide/keybindings.js";
@@ -17,6 +18,7 @@
 
   let sideWidth = 260;
   let agentWidth = 380;
+  let terminalHeight = 260;
   let showAgent = true;
   let attachedFor = null;
   let uninstall = () => {};
@@ -46,8 +48,18 @@
     </div>
     <SplitHandle onDrag={(dx) => (sideWidth = clamp(sideWidth + dx, 180, 480))} line={false} />
   {/if}
-  <div class="editor glass panel">
-    <EditorArea />
+  <div class="center">
+    <div class="editor glass panel">
+      <EditorArea />
+    </div>
+    {#if $terminals.length > 0}
+      {#if $terminalVisible}
+        <SplitHandle vertical onDrag={(dy) => (terminalHeight = clamp(terminalHeight - dy, 120, 640))} line={false} />
+      {/if}
+      <div class="terminal glass panel" class:collapsed={!$terminalVisible} style="height: {terminalHeight}px">
+        <TerminalPanel />
+      </div>
+    {/if}
   </div>
   {#if showAgent}
     <SplitHandle onDrag={(dx) => (agentWidth = clamp(agentWidth - dx, 320, 640))} line={false} />
@@ -91,9 +103,28 @@
     flex-shrink: 0;
   }
 
-  .editor {
+  .center {
     flex: 1;
     min-width: 320px;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .editor {
+    flex: 1;
+  }
+
+  .terminal {
+    flex-shrink: 0;
+    border-radius: 16px;
+    overflow: hidden;
+    display: flex;
+    min-height: 0;
+  }
+
+  .terminal.collapsed {
+    display: none;
   }
 
   .agent {

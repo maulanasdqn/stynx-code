@@ -10,6 +10,8 @@ export const pickFolder = () => invoke("pick_folder");
 export const pickFiles = ({ title = "Open", images = false } = {}) =>
   invoke("pick_files", { title, images });
 
+export const openExternal = (url) => invoke("open_external", { url }).catch(() => {});
+
 export const confirmDestructive = (title, message, okLabel) =>
   invoke("confirm_destructive", { title, message, okLabel });
 

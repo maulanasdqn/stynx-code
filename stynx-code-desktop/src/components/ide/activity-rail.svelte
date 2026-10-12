@@ -1,6 +1,7 @@
 <script>
   import Icon from "../icon.svelte";
-  import { activeSidePanel, quickOpenVisible } from "../../lib/ide/ide-stores.js";
+  import { activeSidePanel, quickOpenVisible, terminalVisible } from "../../lib/ide/ide-stores.js";
+  import { toggleTerminalPanel } from "../../lib/ide/terminals.js";
 
   export let showAgent = true;
 
@@ -19,6 +20,9 @@
   {/each}
   <button class="item" title="Go to File (⌘P)" on:click={() => ($quickOpenVisible = true)}>
     <Icon name="magnifyingglass" size={17} weight={1.6} />
+  </button>
+  <button class="item" class:active={$terminalVisible} title="Terminal (⌘`)" on:click={toggleTerminalPanel}>
+    <Icon name="terminal" size={17} weight={1.6} />
   </button>
   <span class="spacer"></span>
   <button class="item" class:active={showAgent} title="Agent" on:click={() => (showAgent = !showAgent)}>

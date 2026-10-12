@@ -5,6 +5,7 @@ pub mod history;
 pub mod messaging;
 pub mod session;
 pub mod settings;
+pub mod terminal;
 
 use std::sync::Arc;
 

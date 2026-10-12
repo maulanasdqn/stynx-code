@@ -19,6 +19,8 @@ to the Stynx design system.
 | `src/lib/ide/monaco-languages.js` | `src-webgui/src/lib/monaco-setup.ts` (`EXT_LANG`, `langFromPath`) |
 | `src/lib/ide/color.js` | `src-webgui/src/lib/monaco-setup.ts` (`cssColorToHex`, `resolveVarHex`, `mixHex`) |
 | `src/lib/ide/monaco-theme.js` | `src-webgui/src/lib/monaco-setup.ts` (`applyKomaTheme` color mapping) |
+| `src-tauri/src/application/terminal/shells.rs` | `src-agent/src/app/runtime/client/terminal_host.rs` (`shell_args`, shell discovery, macOS zsh key bindings) |
+| `src-tauri/src/application/terminal/manager.rs` | `src-agent/src/app/runtime/client/terminal_host.rs` (PTY sessions, reader loop, resize, kill) |
 
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use
 these files except in compliance with the License. Unless required by

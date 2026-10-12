@@ -21,3 +21,6 @@ impl IdeState {
             .ok_or_else(|| "no workspace attached — call ide_attach first".to_string())
     }
 }
+
+#[derive(Default)]
+pub struct TerminalState(pub std::sync::Mutex<crate::application::terminal::manager::TerminalManager>);

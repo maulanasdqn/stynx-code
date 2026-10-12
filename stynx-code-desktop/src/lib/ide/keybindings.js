@@ -1,6 +1,7 @@
 import { get } from "svelte/store";
 import { activePath, quickOpenVisible, viewMode } from "./ide-stores.js";
 import { closeTab, saveFile } from "./documents.js";
+import { toggleTerminalPanel } from "./terminals.js";
 
 function handle(event) {
   if (get(viewMode) !== "code" || !(event.metaKey || event.ctrlKey) || event.shiftKey || event.altKey) return;
@@ -11,6 +12,9 @@ function handle(event) {
   } else if (key === "p") {
     event.preventDefault();
     quickOpenVisible.set(true);
+  } else if (key === "`") {
+    event.preventDefault();
+    toggleTerminalPanel();
   } else if (key === "w" && get(activePath)) {
     event.preventDefault();
     closeTab(get(activePath));
