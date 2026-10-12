@@ -301,11 +301,28 @@ async fn main() {
                 print_session_history(&c.messages);
                 c
             } else {
+                start_fresh_session(&session_repo).await;
                 Conversation { system: Some(system_prompt.clone()), ..Default::default() }
             }
+        }
+        Err(e) => {
+            tracing::warn!("previous session could not be loaded, starting a new one: {e}");
+            start_fresh_session(&session_repo).await;
+            Conversation { system: Some(system_prompt.clone()), ..Default::default() }
         }
         _ => Conversation { system: Some(system_prompt.clone()), ..Default::default() },
     };
 
     run_loop(engine, conductor_engine, reflect_engine, session_repo, provider, anthropic_handle, config, mode_flag, cwd, system_prompt, conversation, loaded_skills, pause_flag, permission, intern_tools, ask_user_bridge_handle).await;
+}
+
+async fn start_fresh_session(session_repo: &Arc<dyn stynx_code_memory::SessionRepository>) {
+    match session_repo.new_session_id().await {
+        Ok(id) => {
+            if let Err(e) = session_repo.set_current(&id).await {
+                tracing::warn!("failed to start a new session: {e}");
+            }
+        }
+        Err(e) => tracing::warn!("failed to start a new session: {e}"),
+    }
 }

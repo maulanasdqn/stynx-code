@@ -52,16 +52,14 @@ pub(super) async fn refresh_sidebar_sessions(
             pinned: false,
         })
         .collect();
-    if let Some(id) = current {
-        if let Some(s) = summaries.iter().find(|s| s.id == id) {
-            tui.state.sidebar.session_id = s.id.clone();
-            tui.state.sidebar.title = s.title.clone();
-        } else if let Some(first) = summaries.first() {
-            tui.state.sidebar.session_id = first.id.clone();
-            tui.state.sidebar.title = first.title.clone();
-        }
-    } else if let Some(first) = summaries.first() {
-        tui.state.sidebar.session_id = first.id.clone();
-        tui.state.sidebar.title = first.title.clone();
-    }
+    let Some(id) = current else {
+        tui.state.sidebar.title = "New session".to_string();
+        return;
+    };
+    tui.state.sidebar.title = summaries
+        .iter()
+        .find(|s| s.id == id)
+        .map(|s| s.title.clone())
+        .unwrap_or_else(|| "New session".to_string());
+    tui.state.sidebar.session_id = id;
 }
