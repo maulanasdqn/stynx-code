@@ -51,6 +51,9 @@
     "resources": {
       "../THIRD_PARTY_NOTICES.md": "THIRD_PARTY_NOTICES.md",
       "../licenses/koma-APACHE-2.0.txt": "licenses/koma-APACHE-2.0.txt"
+    },
+    "macOS": {
+      "signingIdentity": "-"
     }
   }
 }

@@ -1,0 +1,81 @@
+name: Desktop release
+
+on:
+  push:
+    tags:
+      - 'desktop-v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag, e.g. desktop-v0.33.18'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS (Apple Silicon)
+            os: macos-latest
+            target: aarch64-apple-darwin
+            args: --target aarch64-apple-darwin
+          - name: macOS (Intel)
+            os: macos-latest
+            target: x86_64-apple-darwin
+            args: --target x86_64-apple-darwin
+          - name: Linux
+            os: ubuntu-22.04
+            target: ''
+            args: ''
+          - name: Windows
+            os: windows-latest
+            target: ''
+            args: ''
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Linux system dependencies
+        if: matrix.os == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: desktop-${{ matrix.os }}-${{ matrix.target }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: stynx-code-desktop/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: stynx-code-desktop
+        run: npm ci
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: stynx-code-desktop
+          tagName: ${{ inputs.tag || github.ref_name }}
+          releaseName: 'Stynx Desktop ${{ inputs.tag || github.ref_name }}'
+          releaseBody: |
+            Desktop app for macOS, Windows, and Linux. Download links: https://stynx.app/#download
+
+            **macOS:** the app is not notarized yet. After moving Stynx to Applications, run
+            `xattr -dr com.apple.quarantine /Applications/Stynx.app` once before opening it.
+          releaseDraft: false
+          prerelease: false
+          args: ${{ matrix.args }}
