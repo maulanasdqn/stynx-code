@@ -2,6 +2,7 @@
   import Icon from "../icon.svelte";
   import EditorTabs from "./editor-tabs.svelte";
   import CodeEditor from "./code-editor.svelte";
+  import DiffEditor from "./diff-editor.svelte";
   import ConflictBanner from "./conflict-banner.svelte";
   import { activePath, quickOpenVisible, tabs } from "../../lib/ide/ide-stores.js";
 
@@ -18,7 +19,9 @@
   {/if}
   <div class="body">
     <CodeEditor path={textPath} />
-    {#if !tab}
+    {#if tab?.kind === "diff"}
+      <div class="overlay"><DiffEditor diff={tab.diff} /></div>
+    {:else if !tab}
       <div class="placeholder">
         <Icon name="chevron.left.forwardslash.chevron.right" size={34} weight={1.3} />
         <span class="headline">No file open</span>
@@ -47,6 +50,13 @@
     min-height: 0;
     display: flex;
     position: relative;
+  }
+
+  .overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    background: var(--text-bg);
   }
 
   .placeholder {

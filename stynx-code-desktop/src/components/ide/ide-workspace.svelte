@@ -2,6 +2,7 @@
   import { onDestroy, onMount } from "svelte";
   import ActivityRail from "./activity-rail.svelte";
   import ExplorerPanel from "./explorer-panel.svelte";
+  import GitPanel from "./git-panel.svelte";
   import EditorArea from "./editor-area.svelte";
   import TerminalPanel from "./terminal-panel.svelte";
   import QuickOpen from "./quick-open.svelte";
@@ -9,7 +10,8 @@
   import Chat from "../chat.svelte";
   import SplitHandle from "../split-handle.svelte";
   import { info } from "../../lib/stores.js";
-  import { activeSidePanel, namePrompt, quickOpenVisible, terminals, terminalVisible } from "../../lib/ide/ide-stores.js";
+  import { activeSidePanel, ideRoot, namePrompt, pendingOpen, quickOpenVisible, relativeToRoot, terminals, terminalVisible, tree } from "../../lib/ide/ide-stores.js";
+  import { openFile } from "../../lib/ide/documents.js";
   import { initMonaco } from "../../lib/ide/monaco-setup.js";
   import { attachWorkspace, startFsEvents } from "../../lib/ide/workspace-session.js";
   import { installKeybindings } from "../../lib/ide/keybindings.js";
@@ -37,6 +39,12 @@
     attachWorkspace();
   }
 
+  $: if ($pendingOpen && $ideRoot && $tree.has("")) {
+    const relative = relativeToRoot($pendingOpen);
+    $pendingOpen = null;
+    if (relative) openFile(relative);
+  }
+
   const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 </script>
 
@@ -44,7 +52,7 @@
   <ActivityRail bind:showAgent />
   {#if $activeSidePanel}
     <div class="side glass panel" style="width: {sideWidth}px">
-      <ExplorerPanel />
+      {#if $activeSidePanel === "git"}<GitPanel />{:else}<ExplorerPanel />{/if}
     </div>
     <SplitHandle onDrag={(dx) => (sideWidth = clamp(sideWidth + dx, 180, 480))} line={false} />
   {/if}

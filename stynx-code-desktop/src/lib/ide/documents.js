@@ -5,6 +5,7 @@ import { ideRead, ideSave } from "./ide-api.js";
 import { activePath, ideMessage, ideRoot, tabs } from "./ide-stores.js";
 import { confirmDestructive } from "../native.js";
 import { nameOf } from "./file-tree.js";
+import { refreshGit } from "./git.js";
 
 const docs = new Map();
 
@@ -69,6 +70,7 @@ export async function saveFile(path = get(activePath)) {
     }
     markSaved(path, result.fingerprint);
     ideMessage.set(`Saved ${nameOf(path)}`);
+    refreshGit(200);
   } catch (error) {
     ideMessage.set(String(error));
   }

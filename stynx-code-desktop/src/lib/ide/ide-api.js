@@ -13,3 +13,9 @@ export const terminalOpen = (shell, cols, rows, onEvent) => invoke("terminal_ope
 export const terminalWrite = (id, data) => invoke("terminal_write", { id, data });
 export const terminalResize = (id, cols, rows) => invoke("terminal_resize", { id, cols, rows });
 export const terminalClose = (id) => invoke("terminal_close", { id });
+export const gitStatus = () => invoke("git_status");
+export const gitDiff = (path, staged) => invoke("git_diff", { path, staged });
+export const gitStage = (paths) => invoke("git_stage", { paths });
+export const gitUnstage = (paths) => invoke("git_unstage", { paths });
+export const gitDiscard = (paths) => invoke("git_discard", { paths });
+export const gitCommit = (message) => invoke("git_commit", { message });

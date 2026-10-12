@@ -6,7 +6,7 @@ mod infrastructure;
 
 use application::session::SessionSlot;
 use tauri::Manager;
-use infrastructure::commands::{dialogs, files, fs, terminal, history, messaging, session, settings};
+use infrastructure::commands::{dialogs, files, fs, git, terminal, history, messaging, session, settings};
 
 fn main() {
     tauri::Builder::default()
@@ -42,6 +42,12 @@ fn main() {
             fs::ide_rename,
             fs::ide_delete,
             fs::ide_index,
+            git::git_status,
+            git::git_diff,
+            git::git_stage,
+            git::git_unstage,
+            git::git_discard,
+            git::git_commit,
             terminal::terminal_shells,
             terminal::terminal_open,
             terminal::terminal_write,

@@ -21,6 +21,10 @@ to the Stynx design system.
 | `src/lib/ide/monaco-theme.js` | `src-webgui/src/lib/monaco-setup.ts` (`applyKomaTheme` color mapping) |
 | `src-tauri/src/application/terminal/shells.rs` | `src-agent/src/app/runtime/client/terminal_host.rs` (`shell_args`, shell discovery, macOS zsh key bindings) |
 | `src-tauri/src/application/terminal/manager.rs` | `src-agent/src/app/runtime/client/terminal_host.rs` (PTY sessions, reader loop, resize, kill) |
+| `src-tauri/src/application/git/status.rs` | `src-agent/src/app/runtime/client/git.rs` (`compute_git_status` porcelain v2 parser) |
+| `src-tauri/src/application/git/diff.rs` | `src-agent/src/app/runtime/client/git.rs` (`compute_git_diff`) |
+| `src-tauri/src/application/git/ops.rs` | `src-agent/src/app/runtime/client/git.rs` (`git_stage`, `git_unstage`, `git_discard`, `git_commit`) |
+| `src-tauri/src/application/git/cli.rs` | `src-agent/src/app/runtime/client/git.rs` (`git_cmd`, `git_failure`) |
 
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use
 these files except in compliance with the License. Unless required by

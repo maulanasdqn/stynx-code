@@ -4,12 +4,15 @@
   import { createEntry, deleteEntry, renameEntry, toggleDir } from "../../lib/ide/file-tree.js";
   import { openFile, retargetTab, closeTab } from "../../lib/ide/documents.js";
   import { popupMenu } from "../../lib/native.js";
+  import { gitBadges } from "../../lib/ide/tree-badges.js";
 
   export let node;
   export let depth = 0;
 
   $: open = node.isDir && $expanded.has(node.path);
   $: children = open ? $tree.get(node.path) ?? [] : [];
+  $: badge = $gitBadges.get(node.path);
+  $: tone = badge === "?" || badge === "A" ? "added" : badge === "D" || badge === "U" ? "removed" : badge ? "modified" : "";
 
   function activate() {
     if (node.isDir) toggleDir(node.path);
@@ -60,7 +63,8 @@
   <span class="glyph" class:folder={node.isDir}>
     <Icon name={node.isDir ? (open ? "folder.fill" : "folder") : "doc"} size={13} />
   </span>
-  <span class="name ellipsis">{node.name}</span>
+  <span class="name ellipsis {tone}">{node.name}</span>
+  {#if badge}<span class="badge {tone}">{badge === "?" ? "U" : badge}</span>{/if}
 </button>
 {#if open}
   {#each children as child (child.path)}
@@ -115,6 +119,25 @@
   }
 
   .name {
+    flex: 1;
     min-width: 0;
+  }
+
+  .badge {
+    font-family: var(--mono);
+    font-size: var(--caption);
+    font-weight: 600;
+  }
+
+  .added {
+    color: var(--green);
+  }
+
+  .modified {
+    color: var(--orange);
+  }
+
+  .removed {
+    color: var(--red);
   }
 </style>

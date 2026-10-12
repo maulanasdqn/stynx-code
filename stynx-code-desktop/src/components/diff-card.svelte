@@ -1,4 +1,5 @@
 <script>
+  import { openInEditor } from "../lib/ide/ide-stores.js";
   import Icon from "./icon.svelte";
   import DiffLines from "./diff-lines.svelte";
   import { composerDraft } from "../lib/stores.js";
@@ -50,6 +51,9 @@
     {/if}
     {#if change.adds > 0}<span class="adds">+{change.adds}</span>{/if}
     {#if change.removes > 0}<span class="removes">-{change.removes}</span>{/if}
+    <button class="open" title="Open in Editor" on:click|stopPropagation={() => openInEditor(change.path)}>
+      <Icon name="chevron.left.forwardslash.chevron.right" size={12} />
+    </button>
     <span class="badge" class:added={badge === "A"}>{badge}</span>
   </div>
   {#if isExpanded}
@@ -99,6 +103,18 @@
   .spacer {
     flex: 1;
     min-width: 6px;
+  }
+
+  .open {
+    display: flex;
+    padding: 2px 4px;
+    border-radius: 6px;
+    color: var(--secondary);
+  }
+
+  .open:hover {
+    background: var(--hover);
+    color: var(--accent);
   }
 
   .quote {

@@ -36,6 +36,13 @@ export function registerAgentEditHook(fn) {
   hooks.agentEdit = fn;
 }
 
+export const pendingOpen = writable(null);
+
+export function openInEditor(path) {
+  pendingOpen.set(path);
+  viewMode.set("code");
+}
+
 export function toggleViewMode() {
   viewMode.update((mode) => (mode === "code" ? "chat" : "code"));
 }
@@ -55,3 +62,7 @@ export function notifyAgentEdit(path) {
 export const terminalVisible = writable(false);
 export const terminals = writable([]);
 export const activeTerminal = writable(null);
+
+export const gitState = writable({ isRepo: false, prefix: "", staged: [], unstaged: [], conflicted: [] });
+export const gitBusy = writable(false);
+export const commitMessage = writable("");
