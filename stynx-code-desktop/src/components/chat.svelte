@@ -1,5 +1,5 @@
 <script>
-  import { tick } from "svelte";
+  import { onMount, tick } from "svelte";
   import FeedItem from "./feed-item.svelte";
   import PermissionCard from "./permission-card.svelte";
   import QuestionSheet from "./question-sheet.svelte";
@@ -14,22 +14,44 @@
   export let context = null;
 
   let scroller;
+  let stack;
   let composerHeight = 120;
+  let pinned = true;
+  let seen = 0;
 
-  $: $feed, $permissionPrompt, $question, $isStreaming, scrollToBottom();
+  $: follow($feed, $permissionPrompt, $question, $isStreaming, composerHeight);
 
   $: last = $feed[$feed.length - 1];
   $: showTyping =
     $isStreaming && !(last && (last.role === "assistant" || last.role === "thinking") && last.text);
 
-  async function scrollToBottom() {
+  async function follow(items) {
+    const added = items.length !== seen;
+    if (added && (items.length < seen || items.at(-1)?.role === "user")) pinned = true;
+    seen = items.length;
     await tick();
-    if (scroller) scroller.scrollTo({ top: scroller.scrollHeight, behavior: "smooth" });
+    stick();
   }
+
+  function stick() {
+    if (pinned && scroller) scroller.scrollTop = scroller.scrollHeight;
+  }
+
+  function onScroll() {
+    pinned = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 60;
+  }
+
+  onMount(() => {
+    const observer = new ResizeObserver(stick);
+    observer.observe(stack);
+    observer.observe(scroller);
+    return () => observer.disconnect();
+  });
 </script>
 
 <div class="chat" style="--composer-h: {composerHeight}px">
-  <div class="transcript" bind:this={scroller}>
+  <div class="transcript" bind:this={scroller} on:scroll={onScroll}>
+    <div class="stack" bind:this={stack}>
     {#if $feed.length === 0 && !$permissionPrompt && !$question && !$isStreaming}
       <slot name="empty" />
     {/if}
@@ -53,6 +75,7 @@
     {#if showTyping}
       <div class="entry typing" out:liquid={{ duration: 200, y: 0 }}><TypingDots /></div>
     {/if}
+    </div>
   </div>
 
   <QueuePanel />
@@ -75,6 +98,9 @@
     flex: 1;
     overflow-y: auto;
     padding: calc(var(--toolbar-h) + 14px) 20px calc(var(--composer-h) + 24px);
+  }
+
+  .stack {
     display: flex;
     flex-direction: column;
     align-items: stretch;
