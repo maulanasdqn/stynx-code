@@ -28,6 +28,7 @@ stynx-code-commands = { workspace = true }
 stynx-code-truncus = { workspace = true }
 tauri-plugin-dialog = "2"
 sha2 = { workspace = true }
+regex = { workspace = true }
 notify = "8"
 ignore = "0.4"
 portable-pty = "0.9"

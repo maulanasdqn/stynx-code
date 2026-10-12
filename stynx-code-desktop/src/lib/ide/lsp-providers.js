@@ -5,6 +5,7 @@ import { lspCompletion, lspDefinition, lspHover, lspResolve } from "./ide-api.js
 import { diagnostics, ideRoot, installLogs, lspStatus, revealTarget } from "./ide-stores.js";
 import { flush, pathOf } from "./lsp-sync.js";
 import { toCompletion, toHoverContents, toMarkers, toRange } from "./lsp-convert.js";
+import { registerLspFeatures } from "./lsp-features.js";
 
 const TRIGGERS = [".", ":", "<", '"', "'", "/", "@", ">", "(", ",", "$"];
 
@@ -72,6 +73,7 @@ export async function installLsp(openFile) {
   monaco.languages.registerHoverProvider("*", { provideHover });
   monaco.languages.registerDefinitionProvider("*", { provideDefinition });
   monaco.editor.registerEditorOpener({ openCodeEditor });
+  registerLspFeatures();
   await listen("ide-lsp", ({ payload }) => {
     if (payload.type === "diagnostics") {
       diagnostics.update((map) => {

@@ -1,7 +1,7 @@
 use tauri::{AppHandle, Emitter, State};
 
 use crate::application::session::SessionSlot;
-use crate::application::workspace::{fs_ops, index, root::WorkspaceRoot, watch::WorkspaceWatcher};
+use crate::application::workspace::{fs_ops, index, root::WorkspaceRoot, search, watch::WorkspaceWatcher};
 use crate::domain::ide_fs::{FileContent, FileNode, FsChange, SaveResult};
 use crate::infrastructure::commands::active;
 use crate::infrastructure::emitter::{IDE_FS_EVENT, IDE_LSP_EVENT};
@@ -81,4 +81,17 @@ pub async fn ide_delete(ide: State<'_, IdeState>, path: String) -> Result<(), St
 pub async fn ide_index(ide: State<'_, IdeState>) -> Result<Vec<String>, String> {
     let root = ide.root().await?;
     tokio::task::spawn_blocking(move || index::index_files(&root)).await.map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+pub async fn ide_search(
+    ide: State<'_, IdeState>,
+    query: String,
+    case_sensitive: bool,
+    regex: bool,
+) -> Result<search::SearchResult, String> {
+    let root = ide.root().await?;
+    tokio::task::spawn_blocking(move || search::search(&root, &query, case_sensitive, regex))
+        .await
+        .map_err(|error| error.to_string())?
 }

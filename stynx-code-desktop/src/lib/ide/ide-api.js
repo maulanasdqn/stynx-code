@@ -38,3 +38,5 @@ export const internStatus = () => invoke("intern_status");
 export const internConfigs = () => invoke("intern_configs");
 export const internSave = (entry, previous) => invoke("intern_save", { entry, previous });
 export const internDelete = (name) => invoke("intern_delete", { name });
+export const ideSearch = (query, caseSensitive, regex) => invoke("ide_search", { query, caseSensitive, regex });
+export const lspRequest = (path, method, params) => invoke("lsp_request", { path, method, params });

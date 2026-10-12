@@ -1,12 +1,13 @@
 <script>
   import Icon from "../icon.svelte";
-  import { activeSidePanel, diagnostics, gitState, quickOpenVisible, terminalVisible } from "../../lib/ide/ide-stores.js";
+  import { activeSidePanel, diagnostics, gitState, terminalVisible } from "../../lib/ide/ide-stores.js";
   import { toggleTerminalPanel } from "../../lib/ide/terminals.js";
 
   export let showAgent = true;
 
   const PANELS = [
     { id: "explorer", icon: "folder.stack", label: "Explorer" },
+    { id: "search", icon: "magnifyingglass", label: "Search" },
     { id: "git", icon: "arrow.triangle.branch", label: "Source Control" },
     { id: "problems", icon: "exclamationmark.triangle.fill", label: "Problems" },
     { id: "interns", icon: "person.2", label: "Interns" },
@@ -29,9 +30,6 @@
       {#if counts[panel.id] > 0}<span class="badge" class:alert={panel.id === "problems"}>{counts[panel.id] > 99 ? "99+" : counts[panel.id]}</span>{/if}
     </button>
   {/each}
-  <button class="item" title="Go to File (⌘P)" on:click={() => ($quickOpenVisible = true)}>
-    <Icon name="magnifyingglass" size={17} weight={1.6} />
-  </button>
   <button class="item" class:active={$terminalVisible} title="Terminal (⌘`)" on:click={toggleTerminalPanel}>
     <Icon name="terminal" size={17} weight={1.6} />
   </button>

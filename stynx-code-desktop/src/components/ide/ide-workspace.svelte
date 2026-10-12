@@ -6,6 +6,7 @@
   import ProblemsList from "./problems-list.svelte";
   import ExtensionsPanel from "./extensions-panel.svelte";
   import InternsPanel from "./interns-panel.svelte";
+  import SearchPanel from "./search-panel.svelte";
   import StatusBar from "./status-bar.svelte";
   import EditorArea from "./editor-area.svelte";
   import TerminalPanel from "./terminal-panel.svelte";
@@ -58,7 +59,7 @@
   <ActivityRail bind:showAgent />
   {#if $activeSidePanel}
     <div class="side glass panel" style="width: {sideWidth}px">
-      {#if $activeSidePanel === "git"}<GitPanel />{:else if $activeSidePanel === "problems"}<ProblemsList />{:else if $activeSidePanel === "extensions"}<ExtensionsPanel />{:else if $activeSidePanel === "interns"}<InternsPanel />{:else}<ExplorerPanel />{/if}
+      {#if $activeSidePanel === "git"}<GitPanel />{:else if $activeSidePanel === "problems"}<ProblemsList />{:else if $activeSidePanel === "extensions"}<ExtensionsPanel />{:else if $activeSidePanel === "interns"}<InternsPanel />{:else if $activeSidePanel === "search"}<SearchPanel />{:else}<ExplorerPanel />{/if}
     </div>
     <SplitHandle onDrag={(dx) => (sideWidth = clamp(sideWidth + dx, 180, 480))} line={false} />
   {/if}

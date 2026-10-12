@@ -24,6 +24,14 @@ impl Target {
         self.server.request(method, self.position(line, character)).await
     }
 
+    pub async fn request_doc(&self, method: &str, mut params: Value) -> Result<Value, String> {
+        if !params.is_object() {
+            params = json!({});
+        }
+        params["textDocument"] = json!({ "uri": self.uri });
+        self.server.request(method, params).await
+    }
+
     pub async fn resolve(&self, item: Value) -> Result<Value, String> {
         self.server.request("completionItem/resolve", item).await
     }

@@ -26,14 +26,19 @@ Switch between Chat and Code with the toolbar control or ⌘⇧E. Code mode is a
 lightweight IDE on the agent's workspace, ported from
 [Koma](https://github.com/aula-id/koma) (see `THIRD_PARTY_NOTICES.md`):
 
-- Explorer with create/rename/delete, Monaco editor tabs, quick open (⌘P),
-  save (⌘S) guarded against on-disk changes; agent edits refresh open files.
+- Explorer, Monaco editor tabs, quick open (⌘P), save (⌘S) guarded against
+  on-disk changes; agent edits refresh open files.
+- Search across files (⌘⇧F) with case and regex options.
 - Integrated terminal (⌘\`) backed by a real PTY.
 - Source Control: stage, unstage, discard, commit, side-by-side diffs.
-- Language servers found on your login `PATH` (no auto-install):
-  rust-analyzer, vtsls or typescript-language-server, basedpyright or
-  pyright, gopls, clangd — completions, hover, go-to-definition (F12) and
-  diagnostics in the Problems panel.
+- Syntax highlighting for 240+ languages (TextMate grammars), installed on
+  demand from Extensions → Languages.
+- Language servers: completions, hover, go-to-definition (F12), format
+  document, outline (⌘⇧O), parameter hints and diagnostics. npm-based servers
+  install into `~/.stynx/lsp` from Extensions → LSP.
+- MCP marketplace: search the official registry and install servers into
+  `.mcp.json` or `~/.claude/mcp.json` from Extensions → MCP.
+- Interns: add, edit and remove delegate models and their API keys.
 
 Monaco loads lazily the first time Code mode opens, so Chat stays light.
 

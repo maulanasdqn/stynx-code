@@ -130,3 +130,21 @@ pub async fn lsp_install(app: AppHandle, lsp: State<'_, LspState>, id: String) -
 pub async fn lsp_uninstall(app: AppHandle, lsp: State<'_, LspState>, id: String) -> Result<(), String> {
     change(app, &lsp, &id, true).await
 }
+
+const DOCUMENT_METHODS: &[&str] = &[
+    "textDocument/formatting",
+    "textDocument/rangeFormatting",
+    "textDocument/documentSymbol",
+    "textDocument/signatureHelp",
+];
+
+#[tauri::command]
+pub async fn lsp_request(lsp: State<'_, LspState>, path: String, method: String, params: Value) -> Result<Value, String> {
+    if !DOCUMENT_METHODS.contains(&method.as_str()) {
+        return Err(format!("{method} is not allowed"));
+    }
+    match target(&lsp, &path).await {
+        Some(t) => t.request_doc(&method, params).await,
+        None => Ok(Value::Null),
+    }
+}

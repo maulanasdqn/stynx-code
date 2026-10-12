@@ -1,11 +1,18 @@
 import { get } from "svelte/store";
-import { activePath, quickOpenVisible, viewMode } from "./ide-stores.js";
+import { activePath, activeSidePanel, quickOpenVisible, viewMode } from "./ide-stores.js";
 import { closeTab, saveFile } from "./documents.js";
 import { toggleTerminalPanel } from "./terminals.js";
 
 function handle(event) {
-  if (get(viewMode) !== "code" || !(event.metaKey || event.ctrlKey) || event.shiftKey || event.altKey) return;
+  if (get(viewMode) !== "code" || !(event.metaKey || event.ctrlKey) || event.altKey) return;
   const key = event.key.toLowerCase();
+  if (event.shiftKey) {
+    if (key === "f") {
+      event.preventDefault();
+      activeSidePanel.set("search");
+    }
+    return;
+  }
   if (key === "s") {
     event.preventDefault();
     saveFile();
