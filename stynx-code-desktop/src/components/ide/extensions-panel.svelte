@@ -2,10 +2,12 @@
   import Icon from "../icon.svelte";
   import LanguagesTab from "./languages-tab.svelte";
   import ServersTab from "./servers-tab.svelte";
+  import McpTab from "./mcp-tab.svelte";
 
   const TABS = [
     { id: "languages", label: "Languages" },
-    { id: "servers", label: "Language Servers" },
+    { id: "servers", label: "LSP" },
+    { id: "mcp", label: "MCP" },
   ];
 
   let tab = "languages";
@@ -21,10 +23,10 @@
   </div>
   <div class="search">
     <Icon name="magnifyingglass" size={12} />
-    <input bind:value={query} placeholder="Search {TABS.find((t) => t.id === tab).label.toLowerCase()}…" spellcheck="false" />
+    <input bind:value={query} placeholder={tab === "languages" ? "Search languages…" : tab === "servers" ? "Search language servers…" : "Search MCP registry…"} spellcheck="false" />
   </div>
   <div class="list">
-    {#if tab === "languages"}<LanguagesTab {query} />{:else if tab === "servers"}<ServersTab {query} />{/if}
+    {#if tab === "languages"}<LanguagesTab {query} />{:else if tab === "servers"}<ServersTab {query} />{:else}<McpTab {query} />{/if}
   </div>
 </div>
 

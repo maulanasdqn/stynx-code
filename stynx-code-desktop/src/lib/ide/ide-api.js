@@ -30,3 +30,7 @@ export const lspDefinition = (path, line, character) => invoke("lsp_definition",
 export const lspServers = () => invoke("lsp_servers");
 export const lspInstall = (id) => invoke("lsp_install", { id });
 export const lspUninstall = (id) => invoke("lsp_uninstall", { id });
+export const mcpSearch = (query, cursor) => invoke("mcp_search", { query, cursor });
+export const mcpInstalled = () => invoke("mcp_installed");
+export const mcpInstall = (scope, name, entry) => invoke("mcp_install", { scope, name, entry });
+export const mcpUninstall = (scope, name) => invoke("mcp_uninstall", { scope, name });

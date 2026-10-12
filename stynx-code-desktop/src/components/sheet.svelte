@@ -2,6 +2,11 @@
   export let width = 460;
   export let onCancel;
 
+  function portal(node) {
+    document.body.appendChild(node);
+    return { destroy: () => node.remove() };
+  }
+
   function keydown(event) {
     if (event.key === "Escape") onCancel();
   }
@@ -9,7 +14,7 @@
 
 <svelte:window on:keydown={keydown} />
 
-<div class="scrim">
+<div class="scrim" use:portal>
   <div class="sheet glass panel" style="width: {width}px">
     <slot />
   </div>

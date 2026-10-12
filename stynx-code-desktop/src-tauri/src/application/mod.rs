@@ -2,6 +2,7 @@ pub mod dispatch;
 pub mod env_path;
 pub mod git;
 pub mod lsp;
+pub mod mcp;
 pub mod replay;
 pub mod session;
 pub mod terminal;

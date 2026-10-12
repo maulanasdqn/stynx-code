@@ -6,7 +6,7 @@ mod infrastructure;
 
 use application::session::SessionSlot;
 use tauri::Manager;
-use infrastructure::commands::{dialogs, files, fs, git, lsp, terminal, history, messaging, session, settings};
+use infrastructure::commands::{dialogs, files, fs, git, lsp, mcp, terminal, history, messaging, session, settings};
 
 fn main() {
     tauri::Builder::default()
@@ -52,6 +52,10 @@ fn main() {
             lsp::lsp_hover,
             lsp::lsp_definition,
             lsp::lsp_servers,
+            mcp::mcp_search,
+            mcp::mcp_installed,
+            mcp::mcp_install,
+            mcp::mcp_uninstall,
             lsp::lsp_install,
             lsp::lsp_uninstall,
             git::git_status,
