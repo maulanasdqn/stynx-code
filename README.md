@@ -15,6 +15,11 @@ An interactive AI coding assistant for the terminal. Multi-provider, tool-using,
 
 The product is `stynx-code`. The command you'll actually type is `stynx`.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/desktop-code-dark.png">
+  <img alt="Stynx desktop app in Code mode: explorer, editor, terminal and the Stynx Agent panel" src="assets/screenshots/desktop-code-light.png">
+</picture>
+
 ## What it is
 
 A self-contained terminal app for getting work done with an LLM. Speaks Anthropic's Claude API natively and any OpenAI-compatible endpoint (DeepSeek, OpenAI, OpenRouter, Together, local Ollama, …) for cheap delegation. Runs an autonomous tool-using loop with bash / file edit / glob / grep / web fetch behind a permission system that prompts you only when you ask it to.
@@ -56,7 +61,26 @@ Requires macOS 14.0+. Same credential resolution as the TUI (`ANTHROPIC_API_KEY`
 
 ## Desktop (cross-platform)
 
-Tauri v2 + Svelte app in `stynx-code-desktop/`, targeting macOS, Windows, and Linux from one codebase. Its Rust backend links `stynx-code-app` directly (no uniffi) and mirrors the same command surface the SwiftUI app uses.
+Tauri v2 + Svelte app in `stynx-code-desktop/`, targeting macOS, Windows, and Linux from one codebase. Its Rust backend links `stynx-code-app` directly (no uniffi) and mirrors the same command surface the SwiftUI app uses. It has two modes, toggled from the toolbar or with `⌘⇧E`.
+
+**Chat mode** — the agent conversation, with workspaces, sessions, model and permission controls, interns, and a live diff panel for every file the agent touches.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/desktop-chat-dark.png">
+  <img alt="Stynx desktop app in Chat mode" src="assets/screenshots/desktop-chat-light.png">
+</picture>
+
+**Code mode** — a full IDE with the agent docked beside it.
+
+- **Explorer and editor** — lazy file tree, Monaco tabs, `⌘P` quick open, save with on-disk conflict detection, live reload when the agent edits an open file.
+- **Syntax highlighting** — TextMate grammars (Shiki) for every common language; extra grammars are installable on demand.
+- **Search** — find across files with case and regex toggles; format document, outline, and parameter hints.
+- **Terminal** — real PTY terminals (xterm.js) using your login shell, multiple tabs, `` ⌘` `` to toggle.
+- **Git** — status, stage, unstage, discard, commit, and side-by-side diffs.
+- **Language servers** — completion, hover, go to definition, and diagnostics for Rust, TypeScript, Python, Go, and C/C++; missing servers can be installed from the app.
+- **MCP marketplace** — browse the official MCP registry and add servers to the project or globally.
+- **Interns** — add, edit, and remove intern providers without leaving the editor.
+- **Stynx Agent panel** — asks about the current file or selection (`⌘L`) with the context attached as a chip.
 
 ```bash
 cd stynx-code-desktop
@@ -64,6 +88,8 @@ npm install
 npm run tauri dev     # develop
 npm run tauri build   # .dmg / .msi / .deb / .AppImage per host OS
 ```
+
+Code mode includes code ported from [Koma](https://github.com/aula-id/koma) (Apache-2.0); see `stynx-code-desktop/THIRD_PARTY_NOTICES.md`.
 
 ## Install
 
