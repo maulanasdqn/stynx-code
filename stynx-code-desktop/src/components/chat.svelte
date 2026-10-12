@@ -10,6 +10,9 @@
   import { feed, permissionPrompt, question, isStreaming } from "../lib/stores.js";
   import { liquid } from "../lib/motion.js";
 
+  export let placeholder = undefined;
+  export let context = null;
+
   let scroller;
   let composerHeight = 120;
 
@@ -27,6 +30,9 @@
 
 <div class="chat" style="--composer-h: {composerHeight}px">
   <div class="transcript" bind:this={scroller}>
+    {#if $feed.length === 0 && !$permissionPrompt && !$question && !$isStreaming}
+      <slot name="empty" />
+    {/if}
     {#each $feed as item (item.id)}
       <div class="entry"><FeedItem {item} /></div>
     {/each}
@@ -50,7 +56,9 @@
   </div>
 
   <QueuePanel />
-  <div class="composer-dock" bind:clientHeight={composerHeight}><Composer /></div>
+  <div class="composer-dock" bind:clientHeight={composerHeight}><Composer {placeholder} {context}>
+    <svelte:fragment slot="above"><slot name="composer-above" /></svelte:fragment>
+  </Composer></div>
 </div>
 
 <style>

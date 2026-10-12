@@ -72,3 +72,7 @@ export const lspStatus = writable(new Map());
 export const revealTarget = writable(null);
 
 export const installLogs = writable(new Map());
+
+export const agentVisible = writable(true);
+export const editorContext = writable(null);
+export const includeContext = writable(true);

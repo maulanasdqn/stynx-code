@@ -2,6 +2,7 @@ import { get } from "svelte/store";
 import { activePath, activeSidePanel, quickOpenVisible, viewMode } from "./ide-stores.js";
 import { closeTab, saveFile } from "./documents.js";
 import { toggleTerminalPanel } from "./terminals.js";
+import { askAgent } from "./agent-context.js";
 
 function handle(event) {
   if (get(viewMode) !== "code" || !(event.metaKey || event.ctrlKey) || event.altKey) return;
@@ -19,6 +20,9 @@ function handle(event) {
   } else if (key === "p") {
     event.preventDefault();
     quickOpenVisible.set(true);
+  } else if (key === "l") {
+    event.preventDefault();
+    askAgent();
   } else if (key === "`") {
     event.preventDefault();
     toggleTerminalPanel();

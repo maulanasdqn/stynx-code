@@ -22,6 +22,12 @@
       {#if item.text}
         <div class="bubble selectable">{item.text}</div>
       {/if}
+      {#if item.context}
+        <div class="refs" title="Sent with this context">
+          <Icon name="text.cursor" size={11} />
+          <span class="mono">{item.context}</span>
+        </div>
+      {/if}
       {#if item.referenceCount > 0}
         <div class="refs">
           <Icon name="doc.badge.plus" size={11} />

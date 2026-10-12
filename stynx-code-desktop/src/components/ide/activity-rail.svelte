@@ -1,9 +1,7 @@
 <script>
   import Icon from "../icon.svelte";
-  import { activeSidePanel, diagnostics, gitState, terminalVisible } from "../../lib/ide/ide-stores.js";
+  import { activeSidePanel, agentVisible, diagnostics, gitState, terminalVisible } from "../../lib/ide/ide-stores.js";
   import { toggleTerminalPanel } from "../../lib/ide/terminals.js";
-
-  export let showAgent = true;
 
   const PANELS = [
     { id: "explorer", icon: "folder.stack", label: "Explorer" },
@@ -34,8 +32,8 @@
     <Icon name="terminal" size={17} weight={1.6} />
   </button>
   <span class="spacer"></span>
-  <button class="item" class:active={showAgent} title="Agent" on:click={() => (showAgent = !showAgent)}>
-    <Icon name="bubble.left.and.text.bubble.right" size={17} weight={1.6} />
+  <button class="item agent" class:active={$agentVisible} title="Stynx Agent (⌘L)" on:click={() => ($agentVisible = !$agentVisible)}>
+    <Icon name="sparkles" size={16} />
   </button>
 </nav>
 

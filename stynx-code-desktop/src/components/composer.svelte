@@ -2,21 +2,28 @@
   import { get } from "svelte/store";
   import { tick } from "svelte";
   import Icon from "./icon.svelte";
-  import { isStreaming, composerDraft, pendingImages } from "../lib/stores.js";
+  import { isStreaming, composerDraft, composerFocus, pendingImages } from "../lib/stores.js";
   import { send } from "../lib/messaging.js";
   import { cancel } from "../lib/api.js";
   import { historyUp, historyDown } from "../lib/prompt-history.js";
-  import { imagesFromPaste, addImagePaths } from "../lib/images.js";
-  import { addReferenceFromUrl } from "../lib/references.js";
-  import { pickFiles } from "../lib/native.js";
+  import { handlePaste, attachImages } from "../lib/composer-input.js";
   import { liquid } from "../lib/motion.js";
   import AttachmentsBar from "./attachments-bar.svelte";
   import MentionPopup from "./mention-popup.svelte";
+
+  export let placeholder = "Ask stynx…";
+  export let context = null;
 
   const LINE_HEIGHT = 18;
   const MAX_LINES = 14;
 
   let textarea;
+  let focusSeen = $composerFocus;
+
+  $: if ($composerFocus !== focusSeen) {
+    focusSeen = $composerFocus;
+    tick().then(() => textarea?.focus());
+  }
 
   const sendable = (streaming, draft, images) =>
     !streaming && (draft.trim().length > 0 || images.length > 0);
@@ -43,7 +50,7 @@
     const images = get(pendingImages);
     $composerDraft = "";
     $pendingImages = [];
-    send(text, images);
+    send(text, images, context);
   }
 
   function onKeydown(event) {
@@ -65,37 +72,23 @@
     }
   }
 
-  function onPaste(event) {
-    if (imagesFromPaste(event)) {
-      event.preventDefault();
-      return;
-    }
-    const text = event.clipboardData?.getData("text") ?? "";
-    if (/^https?:\/\/\S+$/.test(text.trim())) {
-      event.preventDefault();
-      addReferenceFromUrl(text);
-    }
-  }
-
-  async function attach() {
-    addImagePaths(await pickFiles({ title: "Attach", images: true }));
-  }
 </script>
 
 <div class="composer glass panel">
   <MentionPopup />
   <AttachmentsBar />
+  <slot name="above" />
   <textarea
     bind:this={textarea}
     bind:value={$composerDraft}
     on:keydown={onKeydown}
-    on:paste={onPaste}
-    placeholder="Ask stynx…"
+    on:paste={handlePaste}
+    {placeholder}
     rows="1"
     spellcheck="false"
   ></textarea>
   <div class="actions">
-    <button class="attach" title="Attach image" on:click={attach}>
+    <button class="attach" title="Attach image" on:click={attachImages}>
       <Icon name="paperclip" size={16} weight={1.7} />
     </button>
     <span class="spacer"></span>

@@ -2,7 +2,8 @@
   import { onDestroy, onMount } from "svelte";
   import { monaco } from "../../lib/ide/monaco-setup.js";
   import { modelFor } from "../../lib/ide/documents.js";
-  import { revealTarget } from "../../lib/ide/ide-stores.js";
+  import { editorContext, revealTarget } from "../../lib/ide/ide-stores.js";
+  import { askAgent } from "../../lib/ide/agent-context.js";
 
   export let path;
 
@@ -30,6 +31,18 @@
       fixedOverflowWidgets: true,
       model: null,
     });
+    editor.onDidChangeCursorSelection(updateContext);
+    editor.addAction({
+      id: "stynx.ask",
+      label: "Ask Stynx",
+      keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyL],
+      contextMenuGroupId: "navigation",
+      contextMenuOrder: 0,
+      run: () => {
+        updateContext();
+        askAgent();
+      },
+    });
     show(path);
   });
 
@@ -41,12 +54,30 @@
     const model = next ? modelFor(next) : null;
     editor.setModel(model);
     current = next;
+    updateContext();
     if (model) {
       model.tokenization?.forceTokenization?.(Math.min(model.getLineCount(), 300));
       const state = viewStates.get(next);
       if (state) editor.restoreViewState(state);
       editor.focus();
     }
+  }
+
+  function updateContext() {
+    const model = editor?.getModel();
+    if (!model || !current) {
+      editorContext.set(null);
+      return;
+    }
+    const selection = editor.getSelection();
+    const text = selection && !selection.isEmpty() ? model.getValueInRange(selection) : "";
+    editorContext.set({
+      path: current,
+      line: editor.getPosition()?.lineNumber ?? null,
+      startLine: selection?.startLineNumber ?? null,
+      endLine: selection?.endLineNumber ?? null,
+      text,
+    });
   }
 
   function reveal(target) {

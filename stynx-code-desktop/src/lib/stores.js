@@ -18,6 +18,7 @@ export const changes = writable([]);
 export const showFiles = writable(true);
 export const showSidebar = writable(true);
 export const references = writable([]);
+export const composerFocus = writable(0);
 
 let counter = 0;
 export const nextId = () => `item-${++counter}`;

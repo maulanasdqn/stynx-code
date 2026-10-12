@@ -12,10 +12,10 @@
   import TerminalPanel from "./terminal-panel.svelte";
   import QuickOpen from "./quick-open.svelte";
   import NameSheet from "./name-sheet.svelte";
-  import Chat from "../chat.svelte";
+  import AgentPanel from "./agent-panel.svelte";
   import SplitHandle from "../split-handle.svelte";
   import { info } from "../../lib/stores.js";
-  import { activeSidePanel, ideRoot, namePrompt, pendingOpen, quickOpenVisible, relativeToRoot, terminals, terminalVisible, tree } from "../../lib/ide/ide-stores.js";
+  import { activeSidePanel, agentVisible, ideRoot, namePrompt, pendingOpen, quickOpenVisible, relativeToRoot, terminals, terminalVisible, tree } from "../../lib/ide/ide-stores.js";
   import { openFile } from "../../lib/ide/documents.js";
   import { initMonaco } from "../../lib/ide/monaco-setup.js";
   import { attachWorkspace, startFsEvents } from "../../lib/ide/workspace-session.js";
@@ -27,7 +27,6 @@
   let sideWidth = 260;
   let agentWidth = 380;
   let terminalHeight = 260;
-  let showAgent = true;
   let attachedFor = null;
   let uninstall = () => {};
 
@@ -56,7 +55,7 @@
 </script>
 
 <div class="ide" class:hidden={!visible}>
-  <ActivityRail bind:showAgent />
+  <ActivityRail />
   {#if $activeSidePanel}
     <div class="side glass panel" style="width: {sideWidth}px">
       {#if $activeSidePanel === "git"}<GitPanel />{:else if $activeSidePanel === "problems"}<ProblemsList />{:else if $activeSidePanel === "extensions"}<ExtensionsPanel />{:else if $activeSidePanel === "interns"}<InternsPanel />{:else if $activeSidePanel === "search"}<SearchPanel />{:else}<ExplorerPanel />{/if}
@@ -77,10 +76,10 @@
       </div>
     {/if}
   </div>
-  {#if showAgent}
+  {#if $agentVisible}
     <SplitHandle onDrag={(dx) => (agentWidth = clamp(agentWidth - dx, 320, 640))} line={false} />
     <div class="agent glass panel" style="width: {agentWidth}px">
-      {#if visible}<Chat />{/if}
+      <AgentPanel {visible} />
     </div>
   {/if}
 </div>
