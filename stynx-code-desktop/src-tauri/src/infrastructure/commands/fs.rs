@@ -4,14 +4,16 @@ use crate::application::session::SessionSlot;
 use crate::application::workspace::{fs_ops, index, root::WorkspaceRoot, watch::WorkspaceWatcher};
 use crate::domain::ide_fs::{FileContent, FileNode, FsChange, SaveResult};
 use crate::infrastructure::commands::active;
-use crate::infrastructure::emitter::IDE_FS_EVENT;
-use crate::infrastructure::ide_state::{IdeState, IdeWorkspace};
+use crate::infrastructure::emitter::{IDE_FS_EVENT, IDE_LSP_EVENT};
+use crate::application::lsp::manager::LspManager;
+use crate::infrastructure::ide_state::{IdeState, IdeWorkspace, LspState};
 
 #[tauri::command]
 pub async fn ide_attach(
     app: AppHandle,
     slot: State<'_, SessionSlot>,
     ide: State<'_, IdeState>,
+    lsp: State<'_, LspState>,
 ) -> Result<String, String> {
     let session = active(&slot).await?;
     let root = WorkspaceRoot::new(&session.workspace_path)?;
@@ -21,6 +23,16 @@ pub async fn ide_attach(
     })
     .map_err(|error| tracing::warn!("file watcher unavailable: {error}"))
     .ok();
+    let path_var = tokio::task::spawn_blocking(|| crate::application::env_path::login_path().map(str::to_string))
+        .await
+        .unwrap_or(None);
+    let lsp_emitter = app.clone();
+    let manager = LspManager::new(root.path().to_path_buf(), path_var, std::sync::Arc::new(move |event| {
+        let _ = lsp_emitter.emit(IDE_LSP_EVENT, event);
+    }));
+    if let Some(mut previous) = lsp.0.lock().await.replace(manager) {
+        previous.shutdown_all().await;
+    }
     let display = root.path().to_string_lossy().to_string();
     *ide.0.lock().await = Some(IdeWorkspace { root, _watcher: watcher });
     Ok(display)

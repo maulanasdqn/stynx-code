@@ -2,6 +2,7 @@
   import { onDestroy, onMount } from "svelte";
   import { monaco } from "../../lib/ide/monaco-setup.js";
   import { modelFor } from "../../lib/ide/documents.js";
+  import { revealTarget } from "../../lib/ide/ide-stores.js";
 
   export let path;
 
@@ -47,7 +48,17 @@
     }
   }
 
+  function reveal(target) {
+    if (!editor || !target || target.path !== current) return;
+    const position = { lineNumber: target.line, column: target.column };
+    editor.setPosition(position);
+    editor.revealPositionInCenter(position);
+    editor.focus();
+    revealTarget.set(null);
+  }
+
   $: show(path);
+  $: reveal($revealTarget, current);
 </script>
 
 <div class="host" bind:this={host}></div>

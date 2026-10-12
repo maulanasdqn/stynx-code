@@ -6,6 +6,8 @@ import { activePath, ideMessage, ideRoot, tabs } from "./ide-stores.js";
 import { confirmDestructive } from "../native.js";
 import { nameOf } from "./file-tree.js";
 import { refreshGit } from "./git.js";
+import { attachModel, detachModel, notifySaved, resetLsp } from "./lsp-sync.js";
+import { applyMarkers } from "./lsp-providers.js";
 
 const docs = new Map();
 
@@ -44,6 +46,8 @@ export async function openFile(path) {
       const doc = { model, fingerprint: file.fingerprint, savedVersion: model.getAlternativeVersionId(), dirty: false };
       track(path, doc);
       docs.set(path, doc);
+      attachModel(path, model);
+      applyMarkers(path, model);
     }
     tabs.update((list) => [...list, { path, name: nameOf(path), kind, dirty: false, conflict: false }]);
   }
@@ -70,6 +74,7 @@ export async function saveFile(path = get(activePath)) {
     }
     markSaved(path, result.fingerprint);
     ideMessage.set(`Saved ${nameOf(path)}`);
+    notifySaved(path);
     refreshGit(200);
   } catch (error) {
     ideMessage.set(String(error));
@@ -120,6 +125,7 @@ export async function closeTab(path) {
     const ok = await confirmDestructive(`Close "${nameOf(path)}"?`, "Your unsaved changes will be lost.", "Discard");
     if (!ok) return;
   }
+  if (doc) detachModel(path);
   doc?.model.dispose();
   docs.delete(path);
   const list = get(tabs);
@@ -133,16 +139,19 @@ export function retargetTab(from, to) {
   const doc = docs.get(from);
   if (!doc) return;
   const model = monaco.editor.createModel(doc.model.getValue(), langFromPath(to), uriFor(to));
+  detachModel(from);
   doc.model.dispose();
   docs.delete(from);
   const moved = { ...doc, model };
   track(to, moved);
   docs.set(to, moved);
+  attachModel(to, model);
   tabs.update((list) => list.map((tab) => (tab.path === from ? { ...tab, path: to, name: nameOf(to) } : tab)));
   if (get(activePath) === from) activePath.set(to);
 }
 
 export function resetDocuments() {
+  resetLsp();
   for (const doc of docs.values()) doc.model.dispose();
   docs.clear();
   tabs.set([]);

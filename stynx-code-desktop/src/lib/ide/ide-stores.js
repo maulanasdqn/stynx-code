@@ -66,3 +66,7 @@ export const activeTerminal = writable(null);
 export const gitState = writable({ isRepo: false, prefix: "", staged: [], unstaged: [], conflicted: [] });
 export const gitBusy = writable(false);
 export const commitMessage = writable("");
+
+export const diagnostics = writable(new Map());
+export const lspStatus = writable(new Map());
+export const revealTarget = writable(null);

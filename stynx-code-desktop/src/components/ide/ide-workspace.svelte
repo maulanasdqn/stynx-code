@@ -3,6 +3,8 @@
   import ActivityRail from "./activity-rail.svelte";
   import ExplorerPanel from "./explorer-panel.svelte";
   import GitPanel from "./git-panel.svelte";
+  import ProblemsList from "./problems-list.svelte";
+  import StatusBar from "./status-bar.svelte";
   import EditorArea from "./editor-area.svelte";
   import TerminalPanel from "./terminal-panel.svelte";
   import QuickOpen from "./quick-open.svelte";
@@ -15,6 +17,7 @@
   import { initMonaco } from "../../lib/ide/monaco-setup.js";
   import { attachWorkspace, startFsEvents } from "../../lib/ide/workspace-session.js";
   import { installKeybindings } from "../../lib/ide/keybindings.js";
+  import { installLsp } from "../../lib/ide/lsp-providers.js";
 
   export let visible = true;
 
@@ -30,6 +33,7 @@
   onMount(() => {
     uninstall = installKeybindings();
     startFsEvents();
+    installLsp(openFile);
   });
 
   onDestroy(() => uninstall());
@@ -52,13 +56,14 @@
   <ActivityRail bind:showAgent />
   {#if $activeSidePanel}
     <div class="side glass panel" style="width: {sideWidth}px">
-      {#if $activeSidePanel === "git"}<GitPanel />{:else}<ExplorerPanel />{/if}
+      {#if $activeSidePanel === "git"}<GitPanel />{:else if $activeSidePanel === "problems"}<ProblemsList />{:else}<ExplorerPanel />{/if}
     </div>
     <SplitHandle onDrag={(dx) => (sideWidth = clamp(sideWidth + dx, 180, 480))} line={false} />
   {/if}
   <div class="center">
     <div class="editor glass panel">
       <EditorArea />
+      <StatusBar />
     </div>
     {#if $terminals.length > 0}
       {#if $terminalVisible}

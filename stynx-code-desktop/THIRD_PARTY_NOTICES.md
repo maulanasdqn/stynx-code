@@ -25,6 +25,9 @@ to the Stynx design system.
 | `src-tauri/src/application/git/diff.rs` | `src-agent/src/app/runtime/client/git.rs` (`compute_git_diff`) |
 | `src-tauri/src/application/git/ops.rs` | `src-agent/src/app/runtime/client/git.rs` (`git_stage`, `git_unstage`, `git_discard`, `git_commit`) |
 | `src-tauri/src/application/git/cli.rs` | `src-agent/src/app/runtime/client/git.rs` (`git_cmd`, `git_failure`) |
+| `src-tauri/src/application/lsp/framing.rs` | `src-agent/src/lsp/client.rs` (Content-Length framing) |
+| `src-tauri/src/application/lsp/server.rs` | `src-agent/src/lsp/client.rs` (spawn, initialize handshake, request/notification routing) |
+| `src-tauri/src/application/lsp/catalog.rs` | `src-agent/src/lsp/catalog.rs` (language server catalog) |
 
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use
 these files except in compliance with the License. Unless required by

@@ -6,7 +6,7 @@ mod infrastructure;
 
 use application::session::SessionSlot;
 use tauri::Manager;
-use infrastructure::commands::{dialogs, files, fs, git, terminal, history, messaging, session, settings};
+use infrastructure::commands::{dialogs, files, fs, git, lsp, terminal, history, messaging, session, settings};
 
 fn main() {
     tauri::Builder::default()
@@ -14,6 +14,7 @@ fn main() {
         .manage(SessionSlot::default())
         .manage(infrastructure::ide_state::IdeState::default())
         .manage(infrastructure::ide_state::TerminalState::default())
+        .manage(infrastructure::ide_state::LspState::default())
         .invoke_handler(tauri::generate_handler![
             session::init_session,
             session::get_session_info,
@@ -42,6 +43,14 @@ fn main() {
             fs::ide_rename,
             fs::ide_delete,
             fs::ide_index,
+            lsp::lsp_open,
+            lsp::lsp_change,
+            lsp::lsp_save,
+            lsp::lsp_close,
+            lsp::lsp_completion,
+            lsp::lsp_resolve,
+            lsp::lsp_hover,
+            lsp::lsp_definition,
             git::git_status,
             git::git_diff,
             git::git_stage,
@@ -61,10 +70,16 @@ fn main() {
         .build(tauri::generate_context!())
         .expect("error while building stynx desktop")
         .run(|app, event| {
-            if let tauri::RunEvent::Exit = event
-                && let Ok(mut terminals) = app.state::<infrastructure::ide_state::TerminalState>().0.lock()
-            {
-                terminals.close_all();
+            if let tauri::RunEvent::Exit = event {
+                if let Ok(mut terminals) = app.state::<infrastructure::ide_state::TerminalState>().0.lock() {
+                    terminals.close_all();
+                }
+                let lsp = app.state::<infrastructure::ide_state::LspState>();
+                tauri::async_runtime::block_on(async {
+                    if let Some(manager) = lsp.0.lock().await.as_mut() {
+                        manager.shutdown_all().await;
+                    }
+                });
             }
         });
 }

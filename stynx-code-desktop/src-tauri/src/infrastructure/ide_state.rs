@@ -24,3 +24,6 @@ impl IdeState {
 
 #[derive(Default)]
 pub struct TerminalState(pub std::sync::Mutex<crate::application::terminal::manager::TerminalManager>);
+
+#[derive(Default)]
+pub struct LspState(pub Mutex<Option<crate::application::lsp::manager::LspManager>>);

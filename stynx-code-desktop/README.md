@@ -20,6 +20,23 @@ a single `engine-event` Tauri event, tagged by `type`.
   reducer, messaging queue, session actions, markdown parser), `components/`
   holds presentation only; all files kebab-case and under 200 lines.
 
+## Code mode (IDE)
+
+Switch between Chat and Code with the toolbar control or ⌘⇧E. Code mode is a
+lightweight IDE on the agent's workspace, ported from
+[Koma](https://github.com/aula-id/koma) (see `THIRD_PARTY_NOTICES.md`):
+
+- Explorer with create/rename/delete, Monaco editor tabs, quick open (⌘P),
+  save (⌘S) guarded against on-disk changes; agent edits refresh open files.
+- Integrated terminal (⌘\`) backed by a real PTY.
+- Source Control: stage, unstage, discard, commit, side-by-side diffs.
+- Language servers found on your login `PATH` (no auto-install):
+  rust-analyzer, vtsls or typescript-language-server, basedpyright or
+  pyright, gopls, clangd — completions, hover, go-to-definition (F12) and
+  diagnostics in the Problems panel.
+
+Monaco loads lazily the first time Code mode opens, so Chat stays light.
+
 ## Develop
 
 ```bash

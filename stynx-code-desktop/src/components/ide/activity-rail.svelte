@@ -1,6 +1,6 @@
 <script>
   import Icon from "../icon.svelte";
-  import { activeSidePanel, gitState, quickOpenVisible, terminalVisible } from "../../lib/ide/ide-stores.js";
+  import { activeSidePanel, diagnostics, gitState, quickOpenVisible, terminalVisible } from "../../lib/ide/ide-stores.js";
   import { toggleTerminalPanel } from "../../lib/ide/terminals.js";
 
   export let showAgent = true;
@@ -8,9 +8,12 @@
   const PANELS = [
     { id: "explorer", icon: "folder.stack", label: "Explorer" },
     { id: "git", icon: "arrow.triangle.branch", label: "Source Control" },
+    { id: "problems", icon: "exclamationmark.triangle.fill", label: "Problems" },
   ];
 
   $: changes = $gitState.staged.length + $gitState.unstaged.length + $gitState.conflicted.length;
+  $: errors = [...$diagnostics.values()].flat().filter((d) => (d.severity ?? 1) === 1).length;
+  $: counts = { git: changes, problems: errors };
 
   function select(id) {
     $activeSidePanel = $activeSidePanel === id ? null : id;
@@ -21,7 +24,7 @@
   {#each PANELS as panel}
     <button class="item" class:active={$activeSidePanel === panel.id} title={panel.label} on:click={() => select(panel.id)}>
       <Icon name={panel.icon} size={17} weight={1.6} />
-      {#if panel.id === "git" && changes > 0}<span class="badge">{changes > 99 ? "99+" : changes}</span>{/if}
+      {#if counts[panel.id] > 0}<span class="badge" class:alert={panel.id === "problems"}>{counts[panel.id] > 99 ? "99+" : counts[panel.id]}</span>{/if}
     </button>
   {/each}
   <button class="item" title="Go to File (⌘P)" on:click={() => ($quickOpenVisible = true)}>
@@ -78,6 +81,10 @@
     line-height: 15px;
     color: white;
     background: var(--accent);
+  }
+
+  .badge.alert {
+    background: var(--red);
   }
 
   .item:hover {
