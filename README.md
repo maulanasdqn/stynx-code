@@ -37,31 +37,9 @@ Highlights:
 
 > **On `.claude/` vs `.stynx/` directories:** stynx-code reuses `.claude/` paths (`.claude/skills/`, `.claude/.credentials.json`) for Claude Code compatibility — you can run both tools side by side without conflict. stynx-specific data (settings, logs, sessions, benchmark results) lives under `.stynx/`.
 
-## Desktop (macOS)
+## Desktop
 
-Native SwiftUI app powered by the same Rust engine as the TUI. The core is compiled into a static library and called in-process via [uniffi](https://github.com/mozilla/uniffi-rs) — one process, no sidecar.
-
-```
-SwiftUI app ──uniffi──▶ libstynx_code_ffi.a  (stynx-code-ffi → stynx-code-app → engine)
-```
-
-**Build:**
-
-```bash
-# 1. Build the Rust static lib + generate Swift bindings (run inside nix devshell)
-./stynx-code-mac/scripts/build-rust.sh
-
-# 2. Build the SwiftUI app
-./stynx-code-mac/scripts/build-app.sh
-```
-
-App lands at `stynx-code-mac/build/Build/Products/Debug/Stynx.app`. Distributed as a notarized DMG (Hardened Runtime, sandbox off) — not via the Mac App Store, since full bash/filesystem tool access is incompatible with the sandbox.
-
-Requires macOS 14.0+. Same credential resolution as the TUI (`ANTHROPIC_API_KEY`, Claude OAuth, or any intern provider key).
-
-## Desktop (cross-platform)
-
-Tauri v2 + Svelte app in `stynx-code-desktop/`, targeting macOS, Windows, and Linux from one codebase. Its Rust backend links `stynx-code-app` directly (no uniffi) and mirrors the same command surface the SwiftUI app uses. It has two modes, toggled from the toolbar or with `⌘⇧E`.
+Tauri v2 + Svelte app in `stynx-code-desktop/`, targeting macOS, Windows, and Linux from one codebase. Its Rust backend links `stynx-code-app` directly, so the desktop app runs the same engine as the TUI in one process. It has two modes, toggled from the toolbar or with `⌘⇧E`.
 
 **Chat mode** — the agent conversation, with workspaces, sessions, model and permission controls, interns, and a live diff panel for every file the agent touches.
 

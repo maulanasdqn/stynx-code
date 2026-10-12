@@ -2,9 +2,8 @@
 
 Tauri v2 + Svelte front-end for the stynx engine, targeting macOS, Windows,
 and Linux. The Rust backend (`src-tauri/`) links `stynx-code-app` directly —
-no uniffi layer — and exposes the same command surface the macOS SwiftUI app
-(`stynx-code-mac/`) consumes over FFI. Engine events stream to the webview as
-a single `engine-event` Tauri event, tagged by `type`.
+so the app runs the same engine as the TUI in one process. Engine events
+stream to the webview as a single `engine-event` Tauri event, tagged by `type`.
 
 ## Layout
 
