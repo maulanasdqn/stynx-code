@@ -69,6 +69,7 @@ pub enum ModalKind {
         buffer: String,
         kind: InputKind,
     },
+    Question(super::qa_state::QaState),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -148,6 +149,13 @@ impl ModalState {
             buffer: initial.into(),
             kind,
         });
+    }
+
+    pub fn open_ask(&mut self, raw: String) {
+        match super::qa_state::parse_qa(&raw) {
+            Some(questions) => self.active = Some(ModalKind::Question(super::qa_state::QaState::new(questions))),
+            None => self.open_input("Question", raw, String::new(), InputKind::AskUserQuestion),
+        }
     }
 
     pub fn close(&mut self) {

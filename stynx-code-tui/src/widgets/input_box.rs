@@ -8,6 +8,7 @@ use ratatui::{
 
 use crate::state::InputState;
 use crate::theme;
+use crate::widgets::input_wrap::wrap;
 
 pub struct InputBox<'a> {
     pub state: &'a InputState,
@@ -43,43 +44,46 @@ impl<'a> Widget for InputBox<'a> {
 
         let inner = block.inner(area);
 
-        let buffer_lines: Vec<&str> = if self.state.buffer.is_empty() {
-            Vec::new()
-        } else {
-            self.state.buffer.split('\n').collect()
-        };
+        let text_width = usize::from(inner.width.saturating_sub(2)).max(1);
+        let visible_rows = usize::from(inner.height).max(1);
+        let text_style = Style::default().fg(theme::TEXT());
 
-        let lines: Vec<Line<'static>> = if buffer_lines.is_empty() {
-            let hint = if self.state.suggestion.is_empty() {
+        if self.state.buffer.is_empty() {
+            let placeholder = if self.state.suggestion.is_empty() {
                 " Ask stynx…".to_string()
             } else {
                 format!(" {}", self.state.suggestion)
             };
-            vec![Line::from(Span::styled(
-                hint,
-                Style::default().fg(theme::TEXT_MUTED()),
-            ))]
-        } else {
-            buffer_lines
-                .iter()
-                .enumerate()
-                .map(|(i, l)| {
-                    if i == buffer_lines.len() - 1 && !self.state.suggestion.is_empty() {
-                        Line::from(vec![
-                            Span::styled(format!(" {l}"), Style::default().fg(theme::TEXT())),
-                            Span::styled(
-                                self.state.suggestion.clone(),
-                                Style::default()
-                                    .fg(theme::MUTED())
-                                    .add_modifier(Modifier::DIM),
-                            ),
-                        ])
-                    } else {
-                        Line::from(Span::styled(format!(" {l}"), Style::default().fg(theme::TEXT())))
-                    }
-                })
-                .collect()
-        };
+            Paragraph::new(Line::from(Span::styled(placeholder, Style::default().fg(theme::TEXT_MUTED()))))
+                .block(block)
+                .style(Style::default().bg(theme::BACKGROUND()))
+                .render(area, buf);
+            if self.focused && inner.width > 1 && inner.height > 0 {
+                buf[(inner.x + 1, inner.y)].set_style(Style::default().bg(theme::PRIMARY()).fg(theme::BACKGROUND()));
+            }
+            return;
+        }
+
+        let wrapped = wrap(&self.state.buffer, self.state.cursor_pos, text_width);
+        let top = (wrapped.cursor_row + 1).saturating_sub(visible_rows);
+        let last_row = wrapped.rows.len().saturating_sub(1);
+        let lines: Vec<Line<'static>> = wrapped
+            .rows
+            .iter()
+            .enumerate()
+            .skip(top)
+            .take(visible_rows)
+            .map(|(i, row)| {
+                let mut spans = vec![Span::styled(format!(" {row}"), text_style)];
+                if i == last_row && !self.state.suggestion.is_empty() {
+                    spans.push(Span::styled(
+                        self.state.suggestion.clone(),
+                        Style::default().fg(theme::MUTED()).add_modifier(Modifier::DIM),
+                    ));
+                }
+                Line::from(spans)
+            })
+            .collect();
 
         Paragraph::new(lines)
             .block(block)
@@ -87,9 +91,9 @@ impl<'a> Widget for InputBox<'a> {
             .render(area, buf);
 
         if self.focused && inner.width > 0 && inner.height > 0 {
-            let (line, col) = self.state.cursor_line_col();
-            let cx = inner.x.saturating_add(1).saturating_add(u16::try_from(col).unwrap_or(u16::MAX));
-            let cy = inner.y.saturating_add(u16::try_from(line).unwrap_or(u16::MAX));
+            let row = wrapped.cursor_row - top;
+            let cx = inner.x.saturating_add(1).saturating_add(u16::try_from(wrapped.cursor_col).unwrap_or(u16::MAX));
+            let cy = inner.y.saturating_add(u16::try_from(row).unwrap_or(u16::MAX));
             let right = inner.x.saturating_add(inner.width);
             let bottom = inner.y.saturating_add(inner.height);
             if cx < right && cy < bottom {

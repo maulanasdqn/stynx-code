@@ -73,6 +73,8 @@ pub struct AppState {
     pub spinner_tick: u8,
     pub total_input: u64,
     pub total_output: u64,
+    pub last_input_tokens: u64,
+    pub context_window: u64,
     pub recent_models: Vec<String>,
     pub tool_details: bool,
 
@@ -137,6 +139,8 @@ impl AppState {
             spinner_tick: 0,
             total_input: 0,
             total_output: 0,
+            last_input_tokens: 0,
+            context_window: 200_000,
             recent_models: Vec::new(),
             tool_details: true,
             live_thinking: String::new(),
@@ -344,7 +348,10 @@ impl AppState {
                 }
             }
             EngineEvent::Usage { input_tokens, output_tokens } => {
-                if input_tokens > 0 { self.total_input += input_tokens; }
+                if input_tokens > 0 {
+                    self.total_input += input_tokens;
+                    self.last_input_tokens = input_tokens;
+                }
                 if output_tokens > 0 { self.total_output += output_tokens; }
                 let (in_price, out_price) = model_pricing(&self.model_name);
                 self.total_cost = (self.total_input as f64 * in_price

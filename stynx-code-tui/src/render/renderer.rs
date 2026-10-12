@@ -8,7 +8,8 @@ use crate::theme;
 use crate::widgets::delegate_bar::DelegateBar;
 use crate::widgets::tool_detail::ToolDetail;
 use crate::widgets::tool_history::{flat_rows, HistoryRow, ToolHistory};
-use crate::widgets::{DialogSelect, Footer, InfoDialog, InputBox, InputDialog, MessageList, PermissionDialog, SidebarInfo, SlashPopover, SummaryBar, ThinkingPanel, ToastStack};
+use crate::widgets::context_panel::panel_lines;
+use crate::widgets::{ContextPanel, DialogSelect, InfoDialog, InputBox, InputDialog, MessageList, PermissionDialog, SlashPopover, StatusLine, SummaryBar, ThinkingPanel, ToastStack};
 
 pub struct Renderer;
 
@@ -37,10 +38,14 @@ impl Renderer {
         let summary_items: Option<Vec<String>> = state.last_summary.clone();
         let layout = MainLayout::split(
             full,
-            state.input.line_count(),
+            crate::widgets::input_wrap::visual_line_count(
+                &state.input.buffer,
+                MainLayout::input_text_width(full),
+            ),
             thinking_lines,
             delegate_lines,
             has_summary,
+            panel_lines(state, usize::from(MainLayout::TOOL_HISTORY_WIDTH)).len(),
         );
 
         let tool_area = layout.tool_history;
@@ -48,21 +53,7 @@ impl Renderer {
             frame.render_widget(ToolHistory::new(state), area);
         }
         if let Some(info_area) = layout.tool_info {
-            frame.render_widget(
-                SidebarInfo {
-                    cwd: &state.cwd,
-                    model: &state.model_name,
-                    mode: &state.permission_mode,
-                    cost: state.total_cost,
-                    git_branch: state.git_branch.as_deref(),
-                    is_streaming: state.is_streaming,
-                    is_pending: state.is_pending,
-                    is_paused: state.is_paused,
-                    spinner_frame: state.spinner_frame,
-                    elapsed_secs: state.elapsed_secs,
-                },
-                info_area,
-            );
+            frame.render_widget(ContextPanel { state }, info_area);
         }
 
         frame.render_widget(
@@ -91,21 +82,7 @@ impl Renderer {
             frame.render_widget(SlashPopover::new(&state.input, layout.input), full);
         }
         if let Some(footer_area) = layout.footer {
-            frame.render_widget(
-                Footer {
-                    cwd: &state.cwd,
-                    model: &state.model_name,
-                    mode: &state.permission_mode,
-                    cost: state.total_cost,
-                    git_branch: state.git_branch.as_deref(),
-                    is_streaming: state.is_streaming,
-                    is_pending: state.is_pending,
-                    is_paused: state.is_paused,
-                    spinner_frame: state.spinner_frame,
-                    elapsed_secs: state.elapsed_secs,
-                },
-                footer_area,
-            );
+            frame.render_widget(StatusLine { state }, footer_area);
         }
 
         frame.render_widget(ToastStack::new(&state.toasts), full);
@@ -161,6 +138,9 @@ impl Renderer {
             }
             Some(ModalKind::Input { title, prompt, buffer, .. }) => {
                 frame.render_widget(InputDialog::new(title, prompt, buffer), full);
+            }
+            Some(ModalKind::Question(qa)) => {
+                frame.render_widget(crate::widgets::question_dialog::QuestionDialog { qa }, full);
             }
             Some(ModalKind::QuitConfirm) => {}
             None => {}

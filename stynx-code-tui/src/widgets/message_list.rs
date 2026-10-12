@@ -1,16 +1,17 @@
 use ratatui::{
     buffer::Buffer,
     layout::Rect,
-    style::{Color, Modifier, Style},
+    style::{Modifier, Style},
     text::{Line, Span},
     widgets::{Paragraph, Widget, Wrap},
 };
 
 use ratatui::layout::Alignment;
 
+use crate::state::conversation_state::{BlockKey, RenderedBlock};
 use crate::state::ConversationState;
 use crate::theme;
-use super::markdown::{render_md_line_wrapped, is_table_line, render_table_block};
+use super::message_block::render_message;
 
 pub struct MessageList<'a> {
     pub state: &'a mut ConversationState,
@@ -51,218 +52,83 @@ impl<'a> Widget for MessageList<'a> {
             return;
         }
 
-        let mut lines: Vec<Line<'static>> = Vec::new();
-
-        let bar = "▌";
-        let body_indent = "  ";
-        let thinking_active = self.thinking_active;
+        let width = area.width;
+        let theme_id = theme::current().id;
         let spin = super::spinner::FRAMES[self.spinner_frame % super::spinner::FRAMES.len()];
+        let messages = &self.state.messages;
+        let cache = &mut self.state.render_cache;
+        cache.truncate(messages.len());
 
-        for msg in &self.state.messages {
-            match msg.role.as_str() {
-                "user" => {
-                    let start = lines.len();
-                    for raw in msg.content.lines() {
-                        lines.push(Line::from(Span::styled(
-                            format!("{body_indent}{}", raw.trim_end()),
-                            Style::default().fg(theme::TEXT()),
-                        )));
-                    }
-                    stamp_role_bar(&mut lines, start, theme::PRIMARY());
-                }
-                "error" => {
-                    lines.push(Line::from(vec![
-                        Span::styled(bar, Style::default().fg(theme::LOVE()).add_modifier(Modifier::BOLD)),
-                        Span::styled(" Error", Style::default().fg(theme::LOVE()).add_modifier(Modifier::BOLD)),
-                    ]));
-                    for raw in msg.content.lines() {
-                        lines.push(Line::from(Span::styled(
-                            format!("{body_indent}{}", raw.trim_end()),
-                            Style::default().fg(theme::LOVE()),
-                        )));
-                    }
-                }
-                "system" => {
-                    for raw in msg.content.lines() {
-                        lines.push(Line::from(vec![
-                            Span::styled(bar, Style::default().fg(theme::SUBTLE())),
-                            Span::styled(
-                                format!(" {}", raw.trim_end()),
-                                Style::default().fg(theme::MUTED()).add_modifier(Modifier::ITALIC),
-                            ),
-                        ]));
-                    }
-                }
-                "done" => {
-                    let parts: Vec<&str> = msg.content.split(", ").collect();
-                    for (i, part) in parts.iter().enumerate() {
-                        let prefix = if i == 0 { "  ✓ " } else { "    " };
-                        let prefix_style = if i == 0 {
-                            Style::default().fg(theme::SUCCESS()).add_modifier(Modifier::BOLD)
-                        } else {
-                            Style::default()
-                        };
-                        lines.push(Line::from(vec![
-                            Span::styled(prefix, prefix_style),
-                            Span::styled(
-                                part.to_string(),
-                                Style::default().fg(theme::MUTED()).add_modifier(Modifier::ITALIC),
-                            ),
-                        ]));
-                    }
-                }
-                _ => {
-                    let asst_start = lines.len();
-                    if msg.is_streaming && thinking_active && msg.content.trim().is_empty() {
-                        lines.push(Line::from(vec![
-                            Span::styled(
-                                format!("  {spin} "),
-                                Style::default().fg(theme::TEXT()).add_modifier(Modifier::BOLD),
-                            ),
-                            Span::styled(
-                                "thinking…",
-                                Style::default()
-                                    .fg(theme::MUTED())
-                                    .add_modifier(Modifier::ITALIC),
-                            ),
-                        ]));
-                        lines.push(Line::from(""));
-                    }
-                    if !msg.thinking.is_empty() && !msg.is_streaming {
-                        let lc = msg.thinking.lines().count();
-                        lines.push(Line::from(Span::styled(
-                            format!("  ◈ thinking · {lc} lines"),
-                            Style::default()
-                                .fg(theme::MUTED())
-                                .add_modifier(Modifier::ITALIC | Modifier::DIM),
-                        )));
-                        lines.push(Line::from(""));
-                    }
-                    let content_lines: Vec<&str> = msg.content.lines().collect();
-                    let mut in_code = false;
-                    let mut in_mermaid = false;
-                    let mut prev_blank = false;
-                    let mut i = 0;
-                    while i < content_lines.len() {
-                        let raw = content_lines[i];
-                        let trimmed_start = raw.trim_start();
-                        let is_blank = raw.trim().is_empty();
-
-                        if is_blank {
-                            if !prev_blank { lines.push(Line::from("")); }
-                            prev_blank = true;
-                            i += 1;
-                            continue;
-                        }
-                        prev_blank = false;
-
-                        if trimmed_start.starts_with("```mermaid") {
-                            in_mermaid = true; in_code = true;
-                            lines.push(Line::from(Span::styled("  ╭─ mermaid ", Style::default().fg(theme::IRIS()).add_modifier(Modifier::BOLD))));
-                        } else if in_mermaid && trimmed_start.starts_with("```") {
-                            in_mermaid = false; in_code = false;
-                            lines.push(Line::from(Span::styled("  ╰────────── ", Style::default().fg(theme::IRIS()))));
-                        } else if in_mermaid {
-                            lines.push(Line::from(vec![
-                                Span::styled("  │ ", Style::default().fg(theme::IRIS())),
-                                Span::styled(raw.trim_end().to_string(), Style::default().fg(theme::GOLD())),
-                            ]));
-                        } else if trimmed_start.starts_with("```") {
-                            if in_code {
-                                in_code = false;
-                                lines.push(Line::from(Span::styled("  ╰──", Style::default().fg(theme::OVERLAY()))));
-                            } else {
-                                in_code = true;
-                                let lang = trimmed_start.trim_start_matches('`').trim();
-                                let label = if lang.is_empty() { "  ╭─ code".to_string() } else { format!("  ╭─ {lang}") };
-                                lines.push(Line::from(Span::styled(label, Style::default().fg(theme::OVERLAY()).add_modifier(Modifier::DIM))));
-                            }
-                        } else if !in_code && is_table_line(raw) {
-                            // Gather the whole contiguous table block and render it
-                            // aligned (columns padded to a common width).
-                            let start = i;
-                            while i < content_lines.len() && is_table_line(content_lines[i]) {
-                                i += 1;
-                            }
-                            lines.extend(render_table_block(&content_lines[start..i], area.width as usize));
-                            continue;
-                        } else {
-                            lines.extend(render_md_line_wrapped(raw, in_code, (area.width as usize).saturating_sub(1)));
-                        }
-                        i += 1;
-                    }
-                    let _ = in_code;
-                    stamp_role_bar(&mut lines, asst_start, theme::HL_HIGH());
-                }
+        for (i, msg) in messages.iter().enumerate() {
+            let live_spinner = msg.is_streaming && self.thinking_active && msg.content.trim().is_empty();
+            let key = BlockKey {
+                content_len: msg.content.len(),
+                thinking_len: msg.thinking.len(),
+                streaming: msg.is_streaming,
+                width,
+                theme: theme_id,
+                spin: if live_spinner { spin } else { ' ' },
+            };
+            if cache.get(i).is_some_and(|block| block.key == key) {
+                continue;
             }
+            let mut lines = render_message(msg, usize::from(width), spin, self.thinking_active);
             lines.push(Line::from(""));
+            let height = Paragraph::new(lines.clone()).wrap(Wrap { trim: false }).line_count(width);
+            let block = RenderedBlock { key, lines, height };
+            if i < cache.len() {
+                cache[i] = block;
+            } else {
+                cache.push(block);
+            }
         }
 
-        lines.push(Line::from(""));
-        lines.push(Line::from(""));
-
-        let width = area.width as usize;
-        let total_rows: usize = lines
-            .iter()
-            .map(|l| {
-                let w = l.width();
-                if w == 0 || width == 0 { 1 } else { (w + width - 1) / width }
-            })
-            .sum();
-
+        let trailing = 2usize;
+        let total_rows: usize = cache.iter().map(|block| block.height).sum::<usize>() + trailing;
         let visible = area.height as usize;
         self.state.total_lines = total_rows;
 
-        // When the conversation doesn't fill the viewport, anchor it to the
-        // bottom (growing upward from the input) instead of leaving a large
-        // empty gap below the messages.
-        if total_rows < visible {
-            let pad = visible - total_rows;
-            let mut anchored: Vec<Line<'static>> = Vec::with_capacity(pad + lines.len());
-            anchored.resize(pad, Line::from(""));
-            anchored.extend(lines);
+        let offset = if total_rows <= visible {
             self.state.scroll_offset = 0;
-            Paragraph::new(anchored).wrap(Wrap { trim: false }).render(area, buf);
-            return;
-        }
-
-        let max_offset = total_rows.saturating_sub(visible);
-        let offset = if self.state.auto_scroll {
-            self.state.scroll_offset = max_offset;
-            max_offset
+            0
         } else {
-            let o = self.state.scroll_offset.min(max_offset);
-            self.state.scroll_offset = o;
-            o
+            let max_offset = total_rows - visible;
+            let offset = if self.state.auto_scroll { max_offset } else { self.state.scroll_offset.min(max_offset) };
+            self.state.scroll_offset = offset;
+            offset
         };
 
-        Paragraph::new(lines).scroll((offset as u16, 0)).wrap(Wrap { trim: false }).render(area, buf);
+        let mut lines: Vec<Line<'static>> = Vec::new();
+        if total_rows < visible {
+            lines.resize(visible - total_rows, Line::from(""));
+        }
+        let mut row = 0usize;
+        let mut skip = 0usize;
+        let mut started = false;
+        for block in cache.iter() {
+            let end = row + block.height;
+            if end > offset && row < offset + visible {
+                if !started {
+                    skip = offset - row.min(offset);
+                    started = true;
+                }
+                lines.extend(block.lines.iter().cloned());
+            }
+            row = end;
+            if row >= offset + visible {
+                break;
+            }
+        }
+        lines.push(Line::from(""));
+        lines.push(Line::from(""));
+
+        Paragraph::new(lines)
+            .wrap(Wrap { trim: false })
+            .scroll((u16::try_from(skip).unwrap_or(u16::MAX), 0))
+            .render(area, buf);
     }
 }
 
-/// Stamp a colored role bar (▌) onto a message's first body line, replacing its
-/// leading indent. The bar's color is the sole role indicator (foam = user,
-/// iris = assistant) — no text label — so messages stay differentiable but clean.
-fn stamp_role_bar(lines: &mut [Line<'static>], start: usize, color: Color) {
-    let line = match lines.get_mut(start) {
-        Some(l) => l,
-        None => return,
-    };
-    if let Some(first) = line.spans.first_mut() {
-        let trimmed = first
-            .content
-            .strip_prefix("  ")
-            .or_else(|| first.content.strip_prefix(' '))
-            .map(|s| s.to_string());
-        if let Some(t) = trimmed {
-            first.content = t.into();
-        }
-    }
-    line.spans.insert(
-        0,
-        Span::styled("▌ ", Style::default().fg(color).add_modifier(Modifier::BOLD)),
-    );
-}
 
 const LOGO_ART: &[&str] = &[
     r" ____   _____ __   __ _   _ __  __",

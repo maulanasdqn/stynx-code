@@ -21,10 +21,29 @@ use std::io;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use crossterm::{
-    event::{DisableBracketedPaste, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture},
+    event::{
+        DisableBracketedPaste, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
+        KeyboardEnhancementFlags, PopKeyboardEnhancementFlags, PushKeyboardEnhancementFlags,
+    },
     execute,
     terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
+
+static KEYBOARD_ENHANCED: AtomicBool = AtomicBool::new(false);
+
+fn push_keyboard_enhancement(out: &mut impl io::Write) {
+    if crossterm::terminal::supports_keyboard_enhancement().unwrap_or(false)
+        && execute!(out, PushKeyboardEnhancementFlags(KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES)).is_ok()
+    {
+        KEYBOARD_ENHANCED.store(true, Ordering::Relaxed);
+    }
+}
+
+fn pop_keyboard_enhancement(out: &mut impl io::Write) {
+    if KEYBOARD_ENHANCED.swap(false, Ordering::Relaxed) {
+        let _ = execute!(out, PopKeyboardEnhancementFlags);
+    }
+}
 use ratatui::{Terminal, backend::CrosstermBackend};
 
 pub struct TuiApp {
@@ -34,6 +53,7 @@ pub struct TuiApp {
 }
 
 pub fn restore_terminal() {
+    pop_keyboard_enhancement(&mut io::stdout());
     let _ = disable_raw_mode();
     let _ = execute!(
         io::stdout(),
@@ -61,6 +81,7 @@ impl TuiApp {
         enable_raw_mode()?;
         let mut stdout = io::stdout();
         execute!(stdout, EnterAlternateScreen, EnableMouseCapture, EnableBracketedPaste)?;
+        push_keyboard_enhancement(&mut stdout);
         let backend = CrosstermBackend::new(stdout);
         let terminal = Terminal::new(backend)?;
         Ok(Self { terminal, state: AppState::new(), in_alt: true })
@@ -74,6 +95,7 @@ impl TuiApp {
 
     pub fn leave_alt(&mut self) {
         if self.in_alt {
+            pop_keyboard_enhancement(self.terminal.backend_mut());
             disable_raw_mode().ok();
             execute!(self.terminal.backend_mut(), DisableMouseCapture, DisableBracketedPaste, LeaveAlternateScreen).ok();
             self.in_alt = false;
@@ -84,12 +106,39 @@ impl TuiApp {
         if !self.in_alt {
             enable_raw_mode().ok();
             execute!(self.terminal.backend_mut(), EnterAlternateScreen, EnableMouseCapture, EnableBracketedPaste).ok();
+            push_keyboard_enhancement(self.terminal.backend_mut());
             self.terminal.clear().ok();
             self.in_alt = true;
         }
     }
 
     pub fn is_in_alt(&self) -> bool { self.in_alt }
+
+    pub fn frame_signature(&self) -> u64 {
+        use std::hash::{Hash, Hasher};
+        let s = &self.state;
+        let mut h = std::collections::hash_map::DefaultHasher::new();
+        s.spinner_frame.hash(&mut h);
+        s.elapsed_secs.hash(&mut h);
+        s.is_streaming.hash(&mut h);
+        s.is_pending.hash(&mut h);
+        s.is_paused.hash(&mut h);
+        s.toasts.items.len().hash(&mut h);
+        s.modal.active.is_some().hash(&mut h);
+        s.conversation.messages.len().hash(&mut h);
+        if let Some(last) = s.conversation.messages.last() {
+            last.content.len().hash(&mut h);
+            last.thinking.len().hash(&mut h);
+            last.tool_uses.len().hash(&mut h);
+        }
+        s.live_thinking.len().hash(&mut h);
+        s.sub_agents.len().hash(&mut h);
+        s.total_input.hash(&mut h);
+        s.total_output.hash(&mut h);
+        s.model_name.hash(&mut h);
+        s.permission_mode.hash(&mut h);
+        h.finish()
+    }
 
     pub fn tick_spinner(&mut self) {
         if self.state.is_streaming || self.state.is_pending {

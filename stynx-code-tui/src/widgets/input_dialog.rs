@@ -3,7 +3,7 @@ use ratatui::{
     layout::Rect,
     style::{Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, Clear, Paragraph, Widget},
+    widgets::{Block, BorderType, Borders, Clear, Paragraph, Widget, Wrap},
 };
 
 use crate::theme;
@@ -22,8 +22,10 @@ impl<'a> InputDialog<'a> {
 
 impl<'a> Widget for InputDialog<'a> {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let w = 60.min(area.width.saturating_sub(4));
-        let h = 7.min(area.height.saturating_sub(4));
+        let w = 76.min(area.width.saturating_sub(4));
+        let lines = self.lines();
+        let content = Paragraph::new(lines.clone()).wrap(Wrap { trim: false }).line_count(w.saturating_sub(2)) as u16;
+        let h = (content + 2).min(area.height.saturating_sub(2));
         let x = area.x + (area.width.saturating_sub(w)) / 2;
         let y = area.y + (area.height.saturating_sub(h)) / 2;
         let rect = Rect { x, y, width: w, height: h };
@@ -31,6 +33,7 @@ impl<'a> Widget for InputDialog<'a> {
 
         let block = Block::default()
             .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
             .border_style(Style::default().fg(theme::BORDER_ACTIVE()))
             .style(Style::default().bg(theme::BACKGROUND_PANEL()))
             .title(Span::styled(
@@ -40,12 +43,25 @@ impl<'a> Widget for InputDialog<'a> {
         let inner = block.inner(rect);
         block.render(rect, buf);
 
-        let lines: Vec<Line<'static>> = vec![
+        Paragraph::new(lines)
+            .wrap(Wrap { trim: false })
+            .style(Style::default().bg(theme::BACKGROUND_PANEL()))
+            .render(inner, buf);
+    }
+}
+
+impl<'a> InputDialog<'a> {
+    fn lines(&self) -> Vec<Line<'static>> {
+        let mut lines = vec![
             Line::from(""),
+        ];
+        lines.extend(self.prompt.lines().map(|line| {
             Line::from(Span::styled(
-                format!("  {}", self.prompt),
-                Style::default().fg(theme::TEXT_MUTED()).bg(theme::BACKGROUND_PANEL()),
-            )),
+                format!("  {line}"),
+                Style::default().fg(theme::TEXT()).bg(theme::BACKGROUND_PANEL()),
+            ))
+        }));
+        lines.extend(vec![
             Line::from(""),
             Line::from(vec![
                 Span::styled(
@@ -69,10 +85,7 @@ impl<'a> Widget for InputDialog<'a> {
                 "  enter  confirm   esc  cancel ".to_string(),
                 Style::default().fg(theme::TEXT_MUTED()).bg(theme::BACKGROUND_PANEL()),
             )),
-        ];
-
-        Paragraph::new(lines)
-            .style(Style::default().bg(theme::BACKGROUND_PANEL()))
-            .render(inner, buf);
+        ]);
+        lines
     }
 }

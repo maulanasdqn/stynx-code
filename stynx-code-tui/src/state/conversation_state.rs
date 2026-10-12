@@ -46,6 +46,23 @@ pub struct ConversationState {
     pub scroll_offset: usize,
     pub auto_scroll: bool,
     pub total_lines: usize,
+    pub render_cache: Vec<RenderedBlock>,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub struct BlockKey {
+    pub content_len: usize,
+    pub thinking_len: usize,
+    pub streaming: bool,
+    pub width: u16,
+    pub theme: &'static str,
+    pub spin: char,
+}
+
+pub struct RenderedBlock {
+    pub key: BlockKey,
+    pub lines: Vec<ratatui::text::Line<'static>>,
+    pub height: usize,
 }
 
 impl ConversationState {
@@ -55,6 +72,7 @@ impl ConversationState {
             scroll_offset: 0,
             auto_scroll: true,
             total_lines: 0,
+            render_cache: Vec::new(),
         }
     }
 }

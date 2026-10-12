@@ -56,6 +56,7 @@ pub async fn run_loop(
         Err(e) => { eprintln!("TUI init failed: {e}"); return; }
     };
     tui.state.model_name = model_id.clone();
+    tui.state.context_window = provider.context_window();
     tui.state.git_branch = super::terminal::git_branch();
     tui.state.cwd = cwd.clone();
     tui.state.conversation.messages = conv_to_tui(&conversation);
@@ -103,9 +104,14 @@ pub async fn run_loop(
     // Actions to process this iteration that didn't come from a key event
     // (e.g. a queued prompt being replayed once the engine frees up).
     let mut deferred: VecDeque<UiAction> = VecDeque::new();
+    let mut early_keys: VecDeque<crossterm::event::Event> = VecDeque::new();
+    let mut needs_draw = true;
+    let mut last_signature = 0u64;
 
     loop {
+        let was_in_alt = tui.is_in_alt();
         tui.sync_pause(&pause_flag);
+        if tui.is_in_alt() && !was_in_alt { needs_draw = true; }
 
         if let Some((task, ev_rx, _)) = &mut engine_task {
             let had_event = {
@@ -116,7 +122,7 @@ pub async fn run_loop(
                 }
                 any
             };
-            if had_event { last_event_at = Some(Instant::now()); }
+            if had_event { last_event_at = Some(Instant::now()); needs_draw = true; }
 
             if let Some(started) = engine_started {
                 tui.state.elapsed_secs = started.elapsed().as_secs();
@@ -212,29 +218,25 @@ pub async fn run_loop(
         if pending_question.is_none() && tui.state.modal.active.is_none() {
             if let Ok(req) = question_rx.try_recv() {
                 let QuestionRequest { question, responder } = req;
-                tui.state.modal.open_input(
-                    "Question",
-                    question,
-                    String::new(),
-                    InputKind::AskUserQuestion,
-                );
+                tui.state.modal.open_ask(question);
                 pending_question = Some(responder);
             }
         }
 
         tui.tick_spinner();
-        if tui.is_in_alt() { tui.draw().ok(); }
 
         loop {
             // Live key events take priority; once they're drained, replay any
             // deferred actions (e.g. a queued prompt freed up by turn completion).
-            let action = match key_rx.try_recv() {
-                Ok(ev) => EventHandler::handle(ev, &mut tui.state),
-                Err(_) => match deferred.pop_front() {
+            let next_key = early_keys.pop_front().or_else(|| key_rx.try_recv().ok());
+            let action = match next_key {
+                Some(ev) => EventHandler::handle(ev, &mut tui.state),
+                None => match deferred.pop_front() {
                     Some(a) => a,
                     None => break,
                 },
             };
+            needs_draw = true;
             match action {
                 UiAction::Submit(text) if engine_task.is_none() => {
                     let trimmed = text.trim().to_string();
@@ -394,6 +396,7 @@ or set DEEPSEEK_API_KEY / OPENROUTER_API_KEY in .env and restart.",
                     provider.set_model(&model_id);
                     let effective = provider.model_name();
                     tui.state.model_name = effective.clone();
+                    tui.state.context_window = provider.context_window();
                     tui.state.push_recent_model(&effective);
                     set_current_model(&effective);
                     tui.state.toasts.success(format!("model → {effective}"));
@@ -492,6 +495,7 @@ or set DEEPSEEK_API_KEY / OPENROUTER_API_KEY in .env and restart.",
                                 provider.set_model(&next);
                                 let effective = provider.model_name();
                                 tui.state.model_name = effective.clone();
+                                tui.state.context_window = provider.context_window();
                                 set_current_model(&effective);
                                 tui.state.push_system_message(format!("model → {effective}"));
                             } else {
@@ -572,7 +576,22 @@ or set DEEPSEEK_API_KEY / OPENROUTER_API_KEY in .env and restart.",
         }
 
         if stop.load(Ordering::Relaxed) { break; }
-        tokio::time::sleep(Duration::from_millis(16)).await;
+
+        let signature = tui.frame_signature();
+        if tui.is_in_alt() && (needs_draw || signature != last_signature) {
+            tui.draw().ok();
+            last_signature = signature;
+            needs_draw = false;
+        }
+
+        tokio::select! {
+            key = key_rx.recv() => {
+                if let Some(key) = key {
+                    early_keys.push_back(key);
+                }
+            }
+            _ = tokio::time::sleep(Duration::from_millis(16)) => {}
+        }
     }
 
     save_session(&session_repo, &conversation).await;

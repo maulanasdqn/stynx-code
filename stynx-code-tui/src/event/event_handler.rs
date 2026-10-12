@@ -2,7 +2,7 @@ use crossterm::event::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, Mou
 
 use crate::dialogs::{open_command_palette, open_file_mention, open_model_picker, open_session_list};
 use crate::state::{
-    AppState, ModalKind, PermissionChoice, SelectKind, filter_options,
+    AppState, InputKind, ModalKind, PermissionChoice, QaOutcome, SelectKind, filter_options,
 };
 
 #[derive(Debug, Clone)]
@@ -249,6 +249,11 @@ impl EventHandler {
                     state.input.suggestion.clear();
                     return UiAction::None;
                 }
+                let cursor = state.input.cursor_pos.min(state.input.buffer.len());
+                if state.input.buffer[..cursor].ends_with('\\') {
+                    state.input.buffer.replace_range(cursor - 1..cursor, "\n");
+                    return UiAction::None;
+                }
                 let display = state.input.buffer.trim().to_string();
                 if display.is_empty() { return UiAction::None; }
                 let real = state.input.expand_for_submit().trim().to_string();
@@ -402,6 +407,41 @@ impl EventHandler {
             }
             return UiAction::None;
         }
+        if let Some(ModalKind::Question(qa)) = state.modal.active.as_mut() {
+            match (key.code, key.modifiers) {
+                (KeyCode::Esc, _) | (KeyCode::Char('c'), KeyModifiers::CONTROL) => state.modal.close(),
+                (KeyCode::Up, _) | (KeyCode::Char('p'), KeyModifiers::CONTROL) => qa.move_cursor(-1),
+                (KeyCode::Down, _) | (KeyCode::Char('n'), KeyModifiers::CONTROL) => qa.move_cursor(1),
+                (KeyCode::Right | KeyCode::Tab, _) => qa.goto(qa.index + 1),
+                (KeyCode::Left | KeyCode::BackTab, _) => qa.goto(qa.index.saturating_sub(1)),
+                (KeyCode::Backspace, _) if qa.on_other() => qa.backspace_other(),
+                (KeyCode::Char(' '), _) if !qa.on_other() => {
+                    let cursor = qa.cursor;
+                    qa.toggle(cursor);
+                }
+                (KeyCode::Char(c), KeyModifiers::NONE) if !qa.on_other() && c.is_ascii_digit() && c != '0' => {
+                    let option = c as usize - '1' as usize;
+                    if option < qa.current().options.len() {
+                        qa.toggle(option);
+                        if !qa.current().multi_select {
+                            if let QaOutcome::Done(value) = qa.confirm() {
+                                state.modal.close();
+                                return UiAction::InputConfirmed { kind: InputKind::AskUserQuestion, value };
+                            }
+                        }
+                    }
+                }
+                (KeyCode::Char(c), KeyModifiers::NONE | KeyModifiers::SHIFT) if qa.on_other() => qa.type_other(c),
+                (KeyCode::Enter, _) => {
+                    if let QaOutcome::Done(value) = qa.confirm() {
+                        state.modal.close();
+                        return UiAction::InputConfirmed { kind: InputKind::AskUserQuestion, value };
+                    }
+                }
+                _ => {}
+            }
+            return UiAction::None;
+        }
         if let Some(ModalKind::Input { buffer, kind, .. }) = state.modal.active.as_mut() {
             match (key.code, key.modifiers) {
                 (KeyCode::Esc, _) | (KeyCode::Char('c'), KeyModifiers::CONTROL) => {
@@ -427,7 +467,7 @@ impl EventHandler {
         let active = state.modal.active.as_mut();
         let Some(active) = active else { return UiAction::None; };
         match active {
-            ModalKind::Info { .. } | ModalKind::Input { .. } | ModalKind::QuitConfirm => UiAction::None,
+            ModalKind::Info { .. } | ModalKind::Input { .. } | ModalKind::Question(_) | ModalKind::QuitConfirm => UiAction::None,
             ModalKind::Permission { choice, .. } => match (key.code, key.modifiers) {
                 (KeyCode::Esc, _) => {
                     state.modal.close();
