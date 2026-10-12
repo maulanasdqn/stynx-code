@@ -27,6 +27,7 @@ pub mod toast;
 pub mod summary_bar;
 pub mod tool_detail;
 pub mod tool_history;
+pub mod tool_label;
 pub mod tool_progress;
 
 pub use dialog_select::DialogSelect;

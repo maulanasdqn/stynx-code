@@ -9,6 +9,7 @@ use ratatui::{
 use crate::state::{AppState, ToolUseStatus};
 use crate::theme;
 use crate::widgets::spinner::FRAMES;
+use crate::widgets::tool_label::{name_cell, pretty_name, truncate_path};
 
 pub struct ToolHistory<'a> {
     pub state: &'a mut AppState,
@@ -46,51 +47,6 @@ pub fn flat_rows(state: &AppState) -> Vec<HistoryRow> {
             }
         }
     }
-    out
-}
-
-fn pretty_name(name: &str) -> &str {
-    match name {
-        "bash" => "Bash",
-        "read" => "Read",
-        "file_write" => "Write",
-        "file_edit" => "Edit",
-        "glob" => "Glob",
-        "grep" => "Grep",
-        "web_fetch" => "WebFetch",
-        "web_search" => "WebSearch",
-        "todo_write" => "TodoWrite",
-        "todo_read" => "TodoRead",
-        "ask_user_question" => "AskUser",
-        "agent" => "Agent",
-        "explore" => "Explore",
-        "delegate_to_all_interns" => "AllInterns",
-        other => other,
-    }
-}
-
-fn truncate_path(s: &str, max: usize) -> String {
-    use unicode_width::UnicodeWidthChar;
-    let total: usize = s.chars().map(|c| c.width().unwrap_or(0)).sum();
-    if total <= max { return s.to_string(); }
-    if s.contains('/') {
-        let parts: Vec<&str> = s.split('/').collect();
-        if let Some(last) = parts.last() {
-            let last_w: usize = last.chars().map(|c| c.width().unwrap_or(0)).sum();
-            if last_w + 4 <= max {
-                return format!("…/{last}");
-            }
-        }
-    }
-    let mut out = String::new();
-    let mut w = 0usize;
-    for c in s.chars() {
-        let cw = c.width().unwrap_or(0);
-        if w + cw + 1 > max { break; }
-        w += cw;
-        out.push(c);
-    }
-    out.push('…');
     out
 }
 
@@ -158,7 +114,7 @@ impl<'a> Widget for ToolHistory<'a> {
                         ToolUseStatus::Error => ("✕".into(), theme::ERROR()),
                     };
                     let pretty = pretty_name(&tool.name);
-                    let name_padded = format!("{:<name_w$}", pretty, name_w = name_w);
+                    let name_padded = name_cell(&pretty, name_w);
                     // While a tool is running and producing output, stream the
                     // latest output line in place of the static input summary.
                     let summary = if tool.status == ToolUseStatus::Running
