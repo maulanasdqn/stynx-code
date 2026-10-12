@@ -18,7 +18,6 @@ members = [
     "stynx-code-plugins",
     "stynx-code-tui",
     "stynx-code-app",
-    "stynx-code-ffi",
     "stynx-code-truncus",
     "stynx-code-desktop/src-tauri",
 ]

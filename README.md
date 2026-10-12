@@ -468,7 +468,7 @@ Every file write/edit is tracked on an undo stack. Use `/undo [n]` to restore th
 
 ## Architecture
 
-The project is a 19-crate Rust workspace. Most crates follow Clean Architecture with `domain/`, `application/`, and `infrastructure/` layers where it adds value.
+The project is a 20-crate Rust workspace. Most crates follow Clean Architecture with `domain/`, `application/`, and `infrastructure/` layers where it adds value.
 
 - `stynx-code-errors`: Common application error types and results.
 - `stynx-code-types`: Core traits and structs for tools, providers, messages, and permissions.
@@ -488,7 +488,8 @@ The project is a 19-crate Rust workspace. Most crates follow Clean Architecture 
 - `stynx-code-plugins`: Plugin lifecycle — subprocess plugins, builtins, config.
 - `stynx-code-tui`: `ratatui` terminal UI — state management, rendering, themes, widgets.
 - `stynx-code-app`: Application orchestration — agent tool registration, intern delegation (including background mode), system prompt assembly, main provider picker.
-- `stynx-code-ffi`: Foreign-function interface for embedding stynx-code in other runtimes.
+- `stynx-code-truncus`: Truncus memory integration — recalls past session summaries and lessons, captures conversations, and exposes memory search tools.
+- `stynx-code-desktop`: Tauri backend for the desktop app — session commands, IDE file system, terminals, git, language servers, MCP.
 
 ## License
 
