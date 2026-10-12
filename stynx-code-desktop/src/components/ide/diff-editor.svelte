@@ -1,7 +1,7 @@
 <script>
   import { onDestroy, onMount } from "svelte";
   import { monaco } from "../../lib/ide/monaco-setup.js";
-  import { langFromPath } from "../../lib/ide/monaco-languages.js";
+  import { languageFor } from "../../lib/ide/syntax.js";
 
   export let diff;
 
@@ -33,11 +33,13 @@
     for (const model of models) model.dispose();
   });
 
-  function show(next) {
+  async function show(next) {
     if (!editor || !next) return;
-    const language = langFromPath(next.path);
+    const language = await languageFor(next.path);
+    if (!editor) return;
     const original = monaco.editor.createModel(next.original, language);
     const modified = monaco.editor.createModel(next.modified, language);
+    for (const model of [original, modified]) model.tokenization?.forceTokenization?.(Math.min(model.getLineCount(), 300));
     editor.setModel({ original, modified });
     for (const model of models) model.dispose();
     models = [original, modified];

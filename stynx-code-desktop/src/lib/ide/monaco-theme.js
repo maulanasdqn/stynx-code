@@ -20,23 +20,52 @@ function palette() {
 }
 
 function tokenRules(p, dark) {
-  const strip = (hex) => hex.replace("#", "");
-  const teal = dark ? "64d2ff" : "0071a4";
-  return [
-    { token: "keyword", foreground: strip(p.accent) },
-    { token: "keyword.flow", foreground: strip(p.accent) },
-    { token: "keyword.control", foreground: strip(p.accent) },
-    { token: "type", foreground: teal },
-    { token: "type.identifier", foreground: teal },
-    { token: "string", foreground: strip(p.orange) },
-    { token: "number", foreground: dark ? "a5d6ff" : "1c00cf" },
-    { token: "regexp", foreground: strip(p.red) },
-    { token: "comment", foreground: strip(p.dim), fontStyle: "italic" },
-    { token: "annotation", foreground: teal },
-    { token: "attribute.name", foreground: teal },
-    { token: "tag", foreground: strip(p.accent) },
-    { token: "metatag", foreground: strip(p.accent) },
+  const c = (hex) => hex.replace("#", "");
+  const tone = dark
+    ? { type: "5dd8ff", func: "67b7a4", number: "d9c97c", prop: "a3cdf0", attr: "d9c97c", tag: "5dd8ff" }
+    : { type: "0b4f79", func: "326d74", number: "1c00cf", prop: "3e6d9c", attr: "815f03", tag: "0b4f79" };
+  const rules = [
+    ["comment", c(p.dim), "italic"],
+    ["punctuation.definition.comment", c(p.dim), "italic"],
+    ["string", c(p.orange)],
+    ["string.regexp", c(p.red)],
+    ["constant.character.escape", c(p.red)],
+    ["constant.numeric", tone.number],
+    ["constant.language", c(p.accent)],
+    ["constant.other", tone.prop],
+    ["keyword", c(p.accent)],
+    ["keyword.operator", c(p.fg)],
+    ["storage", c(p.accent)],
+    ["storage.type", c(p.accent)],
+    ["variable.language", c(p.accent)],
+    ["variable.parameter", c(p.fg)],
+    ["variable.other.property", tone.prop],
+    ["variable.other.object.property", tone.prop],
+    ["meta.object-literal.key", tone.prop],
+    ["support.type.property-name", tone.prop],
+    ["entity.name.function", tone.func],
+    ["support.function", tone.func],
+    ["meta.function-call", tone.func],
+    ["entity.name.type", tone.type],
+    ["entity.name.class", tone.type],
+    ["entity.name.namespace", tone.type],
+    ["entity.other.inherited-class", tone.type],
+    ["support.type", tone.type],
+    ["support.class", tone.type],
+    ["entity.name.tag", tone.tag],
+    ["entity.other.attribute-name", tone.attr],
+    ["markup.heading", c(p.accent), "bold"],
+    ["markup.bold", c(p.fg), "bold"],
+    ["markup.italic", c(p.fg), "italic"],
+    ["markup.inline.raw", c(p.orange)],
+    ["markup.underline.link", c(p.accent)],
+    ["markup.inserted", c(p.green)],
+    ["markup.deleted", c(p.red)],
+    ["invalid", c(p.red)],
+    ["punctuation", c(p.dim)],
+    ["meta.embedded", c(p.fg)],
   ];
+  return rules.map(([token, foreground, fontStyle]) => ({ token, foreground, ...(fontStyle ? { fontStyle } : {}) }));
 }
 
 const SYMBOL_ICONS = [

@@ -1,6 +1,6 @@
 import { get } from "svelte/store";
 import { monaco } from "./monaco-setup.js";
-import { langFromPath } from "./monaco-languages.js";
+import { languageFor } from "./syntax.js";
 import { ideRead, ideSave } from "./ide-api.js";
 import { activePath, ideMessage, ideRoot, tabs } from "./ide-stores.js";
 import { confirmDestructive } from "../native.js";
@@ -42,7 +42,7 @@ export async function openFile(path) {
     }
     const kind = file.tooLarge ? "large" : file.binary ? "binary" : "text";
     if (kind === "text" && !docs.has(path)) {
-      const model = monaco.editor.createModel(file.content ?? "", langFromPath(path), uriFor(path));
+      const model = monaco.editor.createModel(file.content ?? "", await languageFor(path), uriFor(path));
       const doc = { model, fingerprint: file.fingerprint, savedVersion: model.getAlternativeVersionId(), dirty: false };
       track(path, doc);
       docs.set(path, doc);
@@ -135,10 +135,10 @@ export async function closeTab(path) {
   if (get(activePath) === path) activePath.set(next[Math.min(index, next.length - 1)]?.path ?? null);
 }
 
-export function retargetTab(from, to) {
+export async function retargetTab(from, to) {
   const doc = docs.get(from);
   if (!doc) return;
-  const model = monaco.editor.createModel(doc.model.getValue(), langFromPath(to), uriFor(to));
+  const model = monaco.editor.createModel(doc.model.getValue(), await languageFor(to), uriFor(to));
   detachModel(from);
   doc.model.dispose();
   docs.delete(from);

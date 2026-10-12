@@ -9,6 +9,7 @@
     { id: "explorer", icon: "folder.stack", label: "Explorer" },
     { id: "git", icon: "arrow.triangle.branch", label: "Source Control" },
     { id: "problems", icon: "exclamationmark.triangle.fill", label: "Problems" },
+    { id: "extensions", icon: "puzzlepiece.extension", label: "Extensions" },
   ];
 
   $: changes = $gitState.staged.length + $gitState.unstaged.length + $gitState.conflicted.length;

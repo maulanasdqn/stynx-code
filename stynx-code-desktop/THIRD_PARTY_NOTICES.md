@@ -16,7 +16,6 @@ to the Stynx design system.
 | `src-tauri/src/application/workspace/root.rs` | `src-agent/src/app/runtime/client/file_ops.rs` (`resolve_contained`, `safe_join`, `partial_canonicalize`) |
 | `src-tauri/src/application/workspace/fs_ops.rs` | `src-agent/src/app/runtime/client/file_ops.rs` (read/save with fingerprints, binary sniff) |
 | `src/lib/ide/monaco-setup.js` | `src-webgui/src/lib/monaco-setup.ts` (editor core, inlined worker, language contributions) |
-| `src/lib/ide/monaco-languages.js` | `src-webgui/src/lib/monaco-setup.ts` (`EXT_LANG`, `langFromPath`) |
 | `src/lib/ide/color.js` | `src-webgui/src/lib/monaco-setup.ts` (`cssColorToHex`, `resolveVarHex`, `mixHex`) |
 | `src/lib/ide/monaco-theme.js` | `src-webgui/src/lib/monaco-setup.ts` (`applyKomaTheme` color mapping) |
 | `src-tauri/src/application/terminal/shells.rs` | `src-agent/src/app/runtime/client/terminal_host.rs` (`shell_args`, shell discovery, macOS zsh key bindings) |

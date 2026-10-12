@@ -42,6 +42,7 @@
     editor.setModel(model);
     current = next;
     if (model) {
+      model.tokenization?.forceTokenization?.(Math.min(model.getLineCount(), 300));
       const state = viewStates.get(next);
       if (state) editor.restoreViewState(state);
       editor.focus();
