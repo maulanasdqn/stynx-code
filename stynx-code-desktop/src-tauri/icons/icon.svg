@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0.15" y1="0" x2="0.85" y2="1">
+      <stop offset="0" stop-color="#1b3354"/>
+      <stop offset="0.55" stop-color="#0d1828"/>
+      <stop offset="1" stop-color="#060a11"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#3b9bff" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#3b9bff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="river" gradientUnits="userSpaceOnUse" x1="680" y1="280" x2="344" y2="744">
+      <stop offset="0" stop-color="#6cf0e2"/>
+      <stop offset="0.45" stop-color="#3ea2ff"/>
+      <stop offset="1" stop-color="#1d5ce6"/>
+    </linearGradient>
+    <linearGradient id="edge" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.22"/>
+      <stop offset="0.5" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="boat" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect x="100" y="100" width="824" height="824" rx="186" fill="url(#bg)"/>
+  <rect x="101.5" y="101.5" width="821" height="821" rx="184.5" fill="none" stroke="url(#edge)" stroke-width="3"/>
+  <circle cx="512" cy="512" r="330" fill="url(#glow)"/>
+  <path id="s" d="M680 322 C628 248 380 250 378 372 C376 452 470 488 512 512 C554 536 648 572 646 652 C644 774 396 776 344 702" fill="none" stroke="#020509" stroke-opacity="0.45" stroke-width="128" stroke-linecap="round" transform="translate(0 14)"/>
+  <path d="M680 322 C628 248 380 250 378 372 C376 452 470 488 512 512 C554 536 648 572 646 652 C644 774 396 776 344 702" fill="none" stroke="url(#river)" stroke-width="128" stroke-linecap="round"/>
+  <path d="M640 300 C580 262 418 268 412 368 C408 432 474 462 512 484" fill="none" stroke="#e6fbff" stroke-opacity="0.55" stroke-width="12" stroke-linecap="round" stroke-dasharray="46 40"/>
+  <path d="M590 548 C632 576 676 610 674 662 C670 744 560 770 470 752" fill="none" stroke="#e6fbff" stroke-opacity="0.35" stroke-width="12" stroke-linecap="round" stroke-dasharray="46 40"/>
+  <circle cx="512" cy="512" r="74" fill="url(#boat)" opacity="0.6"/>
+  <circle cx="512" cy="512" r="34" fill="#ffffff"/>
+</svg>
