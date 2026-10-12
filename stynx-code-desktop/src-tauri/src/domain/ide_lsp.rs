@@ -6,6 +6,19 @@ use serde_json::Value;
 pub enum LspEvent {
     Diagnostics { path: String, diagnostics: Value },
     Status { server: String, state: String, message: String },
+    InstallLog { id: String, line: String },
+}
+
+#[derive(Serialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct ServerInfo {
+    pub id: String,
+    pub name: String,
+    pub extensions: Vec<String>,
+    pub location: Option<String>,
+    pub managed: bool,
+    pub installable: bool,
+    pub hint: String,
 }
 
 #[derive(Serialize, Clone, Debug)]

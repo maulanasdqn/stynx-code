@@ -43,7 +43,7 @@ fn capabilities() -> Value {
 }
 
 impl LspServer {
-    pub async fn start<N>(program: &Path, args: &[&str], root: &Path, path_var: Option<&str>, on_notify: N) -> Result<Arc<Self>, String>
+    pub async fn start<N>(program: &Path, args: &[&str], root: &Path, path_var: Option<&str>, init_options: Value, on_notify: N) -> Result<Arc<Self>, String>
     where
         N: Fn(String, Value) + Send + Sync + 'static,
     {
@@ -86,7 +86,8 @@ impl LspServer {
         let initialized = server
             .request("initialize", json!({
                 "processId": std::process::id(), "rootUri": uri, "capabilities": capabilities(),
-                "workspaceFolders": [{ "uri": uri, "name": name }], "clientInfo": { "name": "Stynx" }
+                "workspaceFolders": [{ "uri": uri, "name": name }], "clientInfo": { "name": "Stynx" },
+                "initializationOptions": init_options
             }))
             .await;
         if let Err(error) = initialized {

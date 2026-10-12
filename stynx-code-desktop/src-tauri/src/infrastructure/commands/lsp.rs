@@ -1,8 +1,11 @@
 use serde_json::Value;
-use tauri::State;
+use tauri::{AppHandle, Emitter, State};
 
 use crate::application::lsp::manager::Target;
-use crate::domain::ide_lsp::LspLocation;
+use crate::application::lsp::catalog::{SERVERS, install_dir, resolve, spec_by_id};
+use crate::application::lsp::install::npm;
+use crate::domain::ide_lsp::{LspEvent, LspLocation, ServerInfo};
+use crate::infrastructure::emitter::IDE_LSP_EVENT;
 use crate::infrastructure::ide_state::LspState;
 
 async fn target(lsp: &LspState, path: &str) -> Option<Target> {
@@ -76,4 +79,54 @@ pub async fn lsp_definition(
         Some(t) => t.definition(line, character).await,
         None => Ok(Vec::new()),
     }
+}
+
+fn path_var() -> Option<String> {
+    crate::application::env_path::login_path().map(str::to_string)
+}
+
+#[tauri::command]
+pub async fn lsp_servers() -> Result<Vec<ServerInfo>, String> {
+    let path_var = tokio::task::spawn_blocking(path_var).await.map_err(|e| e.to_string())?;
+    let managed_root = install_dir();
+    Ok(SERVERS
+        .iter()
+        .map(|spec| {
+            let location = resolve(spec, path_var.as_deref()).map(|(path, _)| path);
+            let managed = matches!((&location, &managed_root), (Some(path), Some(root)) if path.starts_with(root));
+            ServerInfo {
+                id: spec.id.into(),
+                name: spec.name.into(),
+                extensions: spec.extensions.iter().map(|e| e.to_string()).collect(),
+                location: location.map(|p| p.to_string_lossy().to_string()),
+                managed,
+                installable: !spec.npm.is_empty(),
+                hint: spec.hint.into(),
+            }
+        })
+        .collect())
+}
+
+async fn change(app: AppHandle, lsp: &LspState, id: &str, uninstall: bool) -> Result<(), String> {
+    let spec = spec_by_id(id).ok_or("unknown language server")?;
+    let path_var = tokio::task::spawn_blocking(path_var).await.map_err(|e| e.to_string())?;
+    let log_id = id.to_string();
+    let sink = move |line: String| {
+        let _ = app.emit(IDE_LSP_EVENT, LspEvent::InstallLog { id: log_id.clone(), line });
+    };
+    npm(spec, uninstall, path_var.as_deref(), sink).await?;
+    if let Some(manager) = lsp.0.lock().await.as_mut() {
+        manager.forget(id).await;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn lsp_install(app: AppHandle, lsp: State<'_, LspState>, id: String) -> Result<(), String> {
+    change(app, &lsp, &id, false).await
+}
+
+#[tauri::command]
+pub async fn lsp_uninstall(app: AppHandle, lsp: State<'_, LspState>, id: String) -> Result<(), String> {
+    change(app, &lsp, &id, true).await
 }

@@ -27,3 +27,6 @@ export const lspCompletion = (path, line, character) => invoke("lsp_completion",
 export const lspResolve = (path, item) => invoke("lsp_resolve", { path, item });
 export const lspHover = (path, line, character) => invoke("lsp_hover", { path, line, character });
 export const lspDefinition = (path, line, character) => invoke("lsp_definition", { path, line, character });
+export const lspServers = () => invoke("lsp_servers");
+export const lspInstall = (id) => invoke("lsp_install", { id });
+export const lspUninstall = (id) => invoke("lsp_uninstall", { id });

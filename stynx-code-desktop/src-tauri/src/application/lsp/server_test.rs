@@ -37,7 +37,7 @@ async fn talks_to_a_server_and_routes_notifications() {
     let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel::<(String, Value)>();
     let script_arg = script.to_string_lossy().to_string();
     let args: Vec<&str> = vec![script_arg.as_str()];
-    let server = LspServer::start(&python, &args, dir.path(), None, move |method, params| {
+    let server = LspServer::start(&python, &args, dir.path(), None, Value::Null, move |method, params| {
         let _ = tx.send((method, params));
     })
     .await

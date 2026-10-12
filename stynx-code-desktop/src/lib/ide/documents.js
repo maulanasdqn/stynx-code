@@ -150,6 +150,13 @@ export async function retargetTab(from, to) {
   if (get(activePath) === from) activePath.set(to);
 }
 
+export function reattachLanguageServers() {
+  for (const [path, doc] of docs) {
+    detachModel(path);
+    attachModel(path, doc.model);
+  }
+}
+
 export function resetDocuments() {
   resetLsp();
   for (const doc of docs.values()) doc.model.dispose();

@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use serde_json::{Value, json};
 
-use super::catalog::{ServerSpec, language_id, resolve, spec_for};
+use super::catalog::{ServerSpec, language_id, resolve, spec_for, typescript_sdk};
 use super::server::LspServer;
 use super::uri::{from_uri, to_uri};
 use crate::domain::ide_lsp::{LspEvent, LspLocation};
@@ -81,8 +81,8 @@ impl LspManager {
             };
         }
         let Some((program, args)) = resolve(spec, self.path_var.as_deref()) else {
-            let hint = spec.candidates.iter().map(|(p, _)| *p).collect::<Vec<_>>().join(" or ");
-            self.status(spec, "missing", format!("{} not found — install {hint}", spec.name));
+            let how = if spec.npm.is_empty() { spec.hint.to_string() } else { "install it from Extensions → Language Servers".into() };
+            self.status(spec, "missing", format!("{} not found — {how}", spec.name));
             self.servers.insert(spec.id, Slot::Unavailable);
             return None;
         };
@@ -91,7 +91,11 @@ impl LspManager {
         let root = self.root.clone();
         let name = spec.name;
         let notify = move |method: String, params: Value| forward(&events, &root, name, &method, params);
-        match LspServer::start(&program, args, &self.root, self.path_var.as_deref(), notify).await {
+        let init = match typescript_sdk(&self.root).filter(|_| spec.needs_tsdk) {
+            Some(sdk) => json!({ "typescript": { "tsdk": sdk.to_string_lossy() } }),
+            None => Value::Null,
+        };
+        match LspServer::start(&program, args, &self.root, self.path_var.as_deref(), init, notify).await {
             Ok(server) => {
                 self.status(spec, "ready", format!("{} ready", spec.name));
                 self.servers.insert(spec.id, Slot::Ready(Arc::clone(&server)));
@@ -131,6 +135,12 @@ impl LspManager {
     pub async fn target(&mut self, path: &str) -> Option<Target> {
         let server = self.server(path).await?;
         Some(Target { server, uri: self.uri(path), root: self.root.clone() })
+    }
+
+    pub async fn forget(&mut self, id: &str) {
+        if let Some(Slot::Ready(server)) = self.servers.remove(id) {
+            server.shutdown().await;
+        }
     }
 
     pub async fn shutdown_all(&mut self) {

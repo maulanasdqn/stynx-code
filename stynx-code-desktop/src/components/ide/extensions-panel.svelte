@@ -1,8 +1,12 @@
 <script>
   import Icon from "../icon.svelte";
   import LanguagesTab from "./languages-tab.svelte";
+  import ServersTab from "./servers-tab.svelte";
 
-  const TABS = [{ id: "languages", label: "Languages" }];
+  const TABS = [
+    { id: "languages", label: "Languages" },
+    { id: "servers", label: "Language Servers" },
+  ];
 
   let tab = "languages";
   let query = "";
@@ -20,7 +24,7 @@
     <input bind:value={query} placeholder="Search {TABS.find((t) => t.id === tab).label.toLowerCase()}…" spellcheck="false" />
   </div>
   <div class="list">
-    {#if tab === "languages"}<LanguagesTab {query} />{/if}
+    {#if tab === "languages"}<LanguagesTab {query} />{:else if tab === "servers"}<ServersTab {query} />{/if}
   </div>
 </div>
 

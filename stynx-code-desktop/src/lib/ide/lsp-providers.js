@@ -2,11 +2,10 @@ import { get } from "svelte/store";
 import { listen } from "@tauri-apps/api/event";
 import { monaco } from "./monaco-setup.js";
 import { lspCompletion, lspDefinition, lspHover, lspResolve } from "./ide-api.js";
-import { diagnostics, ideRoot, lspStatus, revealTarget } from "./ide-stores.js";
+import { diagnostics, ideRoot, installLogs, lspStatus, revealTarget } from "./ide-stores.js";
 import { flush, pathOf } from "./lsp-sync.js";
 import { toCompletion, toHoverContents, toMarkers, toRange } from "./lsp-convert.js";
 
-const LANGUAGES = ["rust", "typescript", "javascript", "python", "go", "cpp"];
 const TRIGGERS = [".", ":", "<", '"', "'", "/", "@", ">", "(", ",", "$"];
 
 let installed = false;
@@ -69,11 +68,9 @@ export async function installLsp(openFile) {
   openFileHandler = openFile;
   if (installed) return;
   installed = true;
-  for (const language of LANGUAGES) {
-    monaco.languages.registerCompletionItemProvider(language, { triggerCharacters: TRIGGERS, provideCompletionItems, resolveCompletionItem });
-    monaco.languages.registerHoverProvider(language, { provideHover });
-    monaco.languages.registerDefinitionProvider(language, { provideDefinition });
-  }
+  monaco.languages.registerCompletionItemProvider("*", { triggerCharacters: TRIGGERS, provideCompletionItems, resolveCompletionItem });
+  monaco.languages.registerHoverProvider("*", { provideHover });
+  monaco.languages.registerDefinitionProvider("*", { provideDefinition });
   monaco.editor.registerEditorOpener({ openCodeEditor });
   await listen("ide-lsp", ({ payload }) => {
     if (payload.type === "diagnostics") {
@@ -85,6 +82,8 @@ export async function installLsp(openFile) {
       });
       const model = monaco.editor.getModel(uriFor(payload.path));
       if (model) monaco.editor.setModelMarkers(model, "lsp", toMarkers(payload.diagnostics));
+    } else if (payload.type === "installLog") {
+      installLogs.update((map) => new Map(map).set(payload.id, [...(map.get(payload.id) ?? []), payload.line].slice(-40)));
     } else if (payload.type === "status") {
       lspStatus.update((map) => new Map(map).set(payload.server, { state: payload.state, message: payload.message }));
     }

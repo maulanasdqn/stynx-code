@@ -70,3 +70,5 @@ export const commitMessage = writable("");
 export const diagnostics = writable(new Map());
 export const lspStatus = writable(new Map());
 export const revealTarget = writable(null);
+
+export const installLogs = writable(new Map());
