@@ -34,3 +34,7 @@ export const mcpSearch = (query, cursor) => invoke("mcp_search", { query, cursor
 export const mcpInstalled = () => invoke("mcp_installed");
 export const mcpInstall = (scope, name, entry) => invoke("mcp_install", { scope, name, entry });
 export const mcpUninstall = (scope, name) => invoke("mcp_uninstall", { scope, name });
+export const internStatus = () => invoke("intern_status");
+export const internConfigs = () => invoke("intern_configs");
+export const internSave = (entry, previous) => invoke("intern_save", { entry, previous });
+export const internDelete = (name) => invoke("intern_delete", { name });

@@ -1,6 +1,7 @@
 pub mod dispatch;
 pub mod env_path;
 pub mod git;
+pub mod interns;
 pub mod lsp;
 pub mod mcp;
 pub mod replay;
