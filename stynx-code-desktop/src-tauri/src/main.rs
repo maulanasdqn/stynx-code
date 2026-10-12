@@ -5,12 +5,13 @@ mod domain;
 mod infrastructure;
 
 use application::session::SessionSlot;
-use infrastructure::commands::{dialogs, files, history, messaging, session, settings};
+use infrastructure::commands::{dialogs, files, fs, history, messaging, session, settings};
 
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .manage(SessionSlot::default())
+        .manage(infrastructure::ide_state::IdeState::default())
         .invoke_handler(tauri::generate_handler![
             session::init_session,
             session::get_session_info,
@@ -30,6 +31,14 @@ fn main() {
             dialogs::pick_folder,
             dialogs::pick_files,
             dialogs::confirm_destructive,
+            fs::ide_attach,
+            fs::ide_list_dir,
+            fs::ide_read,
+            fs::ide_save,
+            fs::ide_create,
+            fs::ide_rename,
+            fs::ide_delete,
+            fs::ide_index,
             files::read_file,
             files::read_image,
             files::fetch_reference,

@@ -1,6 +1,7 @@
 import { changes, showFiles } from "./stores.js";
 import { computeDiff } from "./diff.js";
 import { readFile } from "./api.js";
+import { notifyAgentEdit } from "./ide/ide-stores.js";
 
 let changeCounter = 0;
 
@@ -13,6 +14,7 @@ export function recordFileChange(name, inputBuffer) {
   }
   const path = args.file_path ?? args.path;
   if (!path) return;
+  notifyAgentEdit(path);
 
   if (name === "file_edit" && typeof args.old_string === "string" && typeof args.new_string === "string") {
     const diff = computeDiff(args.old_string.split("\n"), args.new_string.split("\n"));

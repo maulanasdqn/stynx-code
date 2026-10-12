@@ -2,21 +2,20 @@
   import { onMount } from "svelte";
   import Sidebar from "./components/sidebar.svelte";
   import Toolbar from "./components/toolbar.svelte";
-  import Chat from "./components/chat.svelte";
-  import FilesPanel from "./components/files-panel.svelte";
+  import ChatWorkspace from "./components/chat-workspace.svelte";
   import SplitHandle from "./components/split-handle.svelte";
   import { attachEngineEvents } from "./lib/engine-events.js";
   import { openWorkspace } from "./lib/session-actions.js";
   import { isMac, pickFolder } from "./lib/native.js";
   import { recentWorkspaces } from "./lib/workspaces.js";
-  import { status, showFiles, showSidebar } from "./lib/stores.js";
+  import { status, showSidebar } from "./lib/stores.js";
+  import { toggleViewMode, viewMode } from "./lib/ide/ide-stores.js";
   import { unfold, trackSpecular } from "./lib/motion.js";
 
   let bootError = "";
   let needsWorkspace = false;
   let sidebarWidth = 260;
-  let filesFraction = 0.5;
-  let detail;
+  let IdeWorkspace = null;
 
   if (isMac) document.documentElement.classList.add("mac");
 
@@ -50,12 +49,20 @@
     sidebarWidth = Math.min(320, Math.max(220, sidebarWidth + dx));
   }
 
-  function resizeFiles(dx) {
-    const width = detail.clientWidth;
-    const files = Math.min(width - 400, Math.max(380, filesFraction * width - dx));
-    filesFraction = files / width;
+  $: if ($viewMode === "code") {
+    $showSidebar = false;
+    if (!IdeWorkspace) import("./components/ide/ide-workspace.svelte").then((m) => (IdeWorkspace = m.default));
+  }
+
+  function keydown(event) {
+    if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === "e") {
+      event.preventDefault();
+      toggleViewMode();
+    }
   }
 </script>
+
+<svelte:window on:keydown={keydown} />
 
 <div class="window" use:trackSpecular>
   {#if $showSidebar}
@@ -64,7 +71,7 @@
     </div>
     <SplitHandle onDrag={resizeSidebar} line={false} />
   {/if}
-  <div class="detail" bind:this={detail}>
+  <div class="detail">
     <Toolbar />
     {#if bootError}
       <div class="boot-error">Could not start the engine: {bootError}</div>
@@ -75,15 +82,12 @@
         <button class="push prominent" on:click={chooseWorkspace}>Open Workspace…</button>
       </div>
     {:else}
-      <div class="workspace">
-        <div class="chat-pane"><Chat /></div>
-        {#if $showFiles}
-          <SplitHandle onDrag={resizeFiles} line={false} />
-          <div class="files-pane" style="width: {filesFraction * 100}%" transition:unfold>
-            <div class="files-card glass panel"><FilesPanel /></div>
-          </div>
-        {/if}
-      </div>
+      {#if $viewMode === "chat"}
+        <ChatWorkspace />
+      {/if}
+      {#if IdeWorkspace}
+        <svelte:component this={IdeWorkspace} visible={$viewMode === "code"} />
+      {/if}
     {/if}
   </div>
 </div>
@@ -124,32 +128,6 @@
     flex-direction: column;
     position: relative;
     background: var(--text-bg);
-  }
-
-  .workspace {
-    flex: 1;
-    display: flex;
-    min-height: 0;
-  }
-
-  .chat-pane {
-    flex: 1;
-    min-width: 400px;
-    display: flex;
-  }
-
-  .files-pane {
-    min-width: 380px;
-    display: flex;
-    padding: calc(var(--toolbar-h) + 2px) 8px 8px 0;
-  }
-
-  .files-card {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    border-radius: 20px;
-    overflow: hidden;
   }
 
   .welcome {

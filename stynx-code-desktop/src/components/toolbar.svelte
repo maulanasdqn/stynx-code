@@ -1,5 +1,6 @@
 <script>
   import Icon from "./icon.svelte";
+  import ModeSwitch from "./mode-switch.svelte";
   import { info, status, isStreaming, showFiles, showSidebar, sessions } from "../lib/stores.js";
   import { openSession, startNewSession, refreshSessions } from "../lib/session-actions.js";
   import { isMac, popupMenu, startWindowDrag } from "../lib/native.js";
@@ -30,6 +31,7 @@
     <span class="title">Stynx</span>
     {#if subtitle}<span class="subtitle ellipsis">{subtitle}</span>{/if}
   </div>
+  <ModeSwitch />
   <span class="spacer"></span>
 
   <div class="pill glass" class:busy={$isStreaming}>
