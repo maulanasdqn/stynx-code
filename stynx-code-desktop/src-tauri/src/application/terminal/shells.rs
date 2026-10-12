@@ -52,10 +52,21 @@ pub fn zsh_keys_dir(shell: &str, id: u32) -> Option<PathBuf> {
     }
     let dir = std::env::temp_dir().join(format!("stynx-zdot-{}-{id}", std::process::id()));
     std::fs::create_dir_all(&dir).ok()?;
-    let profile = "[[ -f \"$HOME/.zprofile\" ]] && source \"$HOME/.zprofile\"\n[[ -f \"$HOME/.zlogin\" ]] && source \"$HOME/.zlogin\"\n";
-    let rc = "[[ -f \"$HOME/.zshrc\" ]] && source \"$HOME/.zshrc\"\nbindkey '^?' backward-delete-char\nbindkey '^H' backward-delete-char\nbindkey '^[[3~' delete-char\n";
+    let env = format!(
+        "STYNX_ZDOTDIR=\"{dir}\"\n[[ -f \"$HOME/.zshenv\" ]] && source \"$HOME/.zshenv\"\nif [[ -n \"$ZDOTDIR\" && \"$ZDOTDIR\" != \"$STYNX_ZDOTDIR\" ]]; then STYNX_USER_ZDOTDIR=\"$ZDOTDIR\"; else STYNX_USER_ZDOTDIR=\"$HOME\"; fi\nZDOTDIR=\"$STYNX_ZDOTDIR\"\n[[ \"$STYNX_USER_ZDOTDIR\" != \"$HOME\" && -f \"$STYNX_USER_ZDOTDIR/.zshenv\" ]] && source \"$STYNX_USER_ZDOTDIR/.zshenv\"\nZDOTDIR=\"$STYNX_ZDOTDIR\"\n",
+        dir = dir.display()
+    );
+    let user_file = |name: &str| format!("[[ -f \"$STYNX_USER_ZDOTDIR/{name}\" ]] && source \"$STYNX_USER_ZDOTDIR/{name}\"\n");
+    let profile = user_file(".zprofile");
+    let login = user_file(".zlogin");
+    let rc = format!(
+        "ZDOTDIR=\"$STYNX_USER_ZDOTDIR\"\n{}bindkey '^?' backward-delete-char\nbindkey '^H' backward-delete-char\nbindkey '^[[3~' delete-char\n",
+        user_file(".zshrc")
+    );
+    std::fs::write(dir.join(".zshenv"), env).ok()?;
     std::fs::write(dir.join(".zprofile"), profile).ok()?;
     std::fs::write(dir.join(".zshrc"), rc).ok()?;
+    std::fs::write(dir.join(".zlogin"), login).ok()?;
     Some(dir)
 }
 
@@ -70,5 +81,40 @@ mod tests {
         }
         assert_eq!(shell_args("C:\\PowerShell\\pwsh.exe"), ["-NoLogo", "-NoExit"]);
         assert!(shell_args("cmd.exe").is_empty());
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn zsh_wrapper_loads_user_env_and_rc() {
+        let home = tempfile::tempdir().unwrap();
+        std::fs::write(home.path().join(".zshenv"), "export ZSH=/tmp/ohmy\n").unwrap();
+        std::fs::write(home.path().join(".zshrc"), "echo \"rc:$ZSH\"\n").unwrap();
+        let dir = zsh_keys_dir("/bin/zsh", 9001).unwrap();
+        let out = std::process::Command::new("/bin/zsh")
+            .args(["-l", "-i", "-c", "true"])
+            .env("HOME", home.path())
+            .env("ZDOTDIR", &dir)
+            .output()
+            .unwrap();
+        let _ = std::fs::remove_dir_all(dir);
+        assert!(String::from_utf8_lossy(&out.stdout).contains("rc:/tmp/ohmy"), "{:?}", out);
+    }
+}
+
+#[cfg(all(test, target_os = "macos"))]
+mod real_home {
+    #[test]
+    #[ignore = "uses the developer's real zsh config"]
+    fn real_zsh_config_loads_cleanly() {
+        let dir = super::zsh_keys_dir("/bin/zsh", 9002).unwrap();
+        let out = std::process::Command::new("/bin/zsh")
+            .args(["-l", "-i", "-c", "echo ZSH=$ZSH"])
+            .env("ZDOTDIR", &dir)
+            .output()
+            .unwrap();
+        let _ = std::fs::remove_dir_all(dir);
+        let stderr = String::from_utf8_lossy(&out.stderr);
+        println!("stdout: {}\nstderr: {stderr}", String::from_utf8_lossy(&out.stdout));
+        assert!(!stderr.contains("no such file or directory"), "{stderr}");
     }
 }
