@@ -14,6 +14,9 @@
   --glass: rgba(255, 255, 255, 0.6);
   --glass-edge: rgba(0, 0, 0, 0.08);
   --hover: rgba(0, 0, 0, 0.05);
+  --agent-surface: #f2f6fd;
+  --agent-header: #e6eefc;
+  --agent-edge: rgba(0, 113, 227, 0.22);
   --accent-rgb: 0, 122, 255;
   --green: #28cd41;
   --red: #ff3b30;
@@ -52,6 +55,9 @@
     --glass: rgba(255, 255, 255, 0.07);
     --glass-edge: rgba(255, 255, 255, 0.12);
     --hover: rgba(255, 255, 255, 0.06);
+    --agent-surface: #20242c;
+    --agent-header: #252c38;
+    --agent-edge: rgba(10, 132, 255, 0.28);
     --accent-rgb: 10, 132, 255;
     --green: #32d74b;
     --red: #ff453a;

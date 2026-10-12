@@ -45,9 +45,9 @@
     min-height: 0;
     display: flex;
     flex-direction: column;
-    background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.09), rgba(var(--accent-rgb), 0.025) 180px, transparent 60%);
+    background: var(--agent-surface);
   }
-  .head { display: flex; align-items: center; gap: 8px; padding: 10px 8px 10px 12px; border-bottom: 1px solid rgba(var(--accent-rgb), 0.18); }
+  .head { display: flex; align-items: center; gap: 8px; padding: 10px 8px 10px 12px; background: var(--agent-header); border-bottom: 1px solid var(--agent-edge); }
   .mark { width: 26px; height: 26px; border-radius: 8px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: white; background: linear-gradient(145deg, rgba(var(--accent-rgb), 1), rgba(var(--accent-rgb), 0.65)); }
   .titles { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
   .title { font-size: var(--headline); font-weight: 700; }

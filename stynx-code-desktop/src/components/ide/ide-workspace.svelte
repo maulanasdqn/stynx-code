@@ -60,7 +60,7 @@
     <div class="side glass panel" style="width: {sideWidth}px">
       {#if $activeSidePanel === "git"}<GitPanel />{:else if $activeSidePanel === "problems"}<ProblemsList />{:else if $activeSidePanel === "extensions"}<ExtensionsPanel />{:else if $activeSidePanel === "interns"}<InternsPanel />{:else if $activeSidePanel === "search"}<SearchPanel />{:else}<ExplorerPanel />{/if}
     </div>
-    <SplitHandle onDrag={(dx) => (sideWidth = clamp(sideWidth + dx, 180, 480))} line={false} />
+    <SplitHandle onDrag={(dx) => (sideWidth = clamp(sideWidth + dx, 180, 480))} line={false} gap />
   {/if}
   <div class="center">
     <div class="editor glass panel">
@@ -69,7 +69,7 @@
     </div>
     {#if $terminals.length > 0}
       {#if $terminalVisible}
-        <SplitHandle vertical onDrag={(dy) => (terminalHeight = clamp(terminalHeight - dy, 120, 640))} line={false} />
+        <SplitHandle vertical onDrag={(dy) => (terminalHeight = clamp(terminalHeight - dy, 120, 640))} line={false} gap />
       {/if}
       <div class="terminal glass panel" class:collapsed={!$terminalVisible} style="height: {terminalHeight}px">
         <TerminalPanel />
@@ -77,7 +77,7 @@
     {/if}
   </div>
   {#if $agentVisible}
-    <SplitHandle onDrag={(dx) => (agentWidth = clamp(agentWidth - dx, 320, 640))} line={false} />
+    <SplitHandle onDrag={(dx) => (agentWidth = clamp(agentWidth - dx, 320, 640))} line={false} gap />
     <div class="agent glass panel" style="width: {agentWidth}px">
       <AgentPanel {visible} />
     </div>
@@ -145,6 +145,10 @@
   .agent {
     flex-shrink: 0;
     position: relative;
+    background: var(--agent-surface);
+    box-shadow:
+      0 6px 24px rgba(0, 0, 0, 0.16),
+      inset 0 0 0 1px var(--agent-edge);
     --toolbar-h: 0px;
   }
 </style>

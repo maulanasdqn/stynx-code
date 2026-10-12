@@ -2,6 +2,7 @@
   export let onDrag;
   export let line = true;
   export let vertical = false;
+  export let gap = false;
 
   let start = 0;
 
@@ -23,6 +24,7 @@
   class="handle"
   class:line
   class:vertical
+  class:gap
   role="separator"
   aria-orientation={vertical ? "horizontal" : "vertical"}
   on:pointerdown={down}
@@ -48,6 +50,17 @@
 
   .handle:not(.line) {
     background: var(--text-bg);
+  }
+
+  .handle.gap {
+    width: 8px;
+    margin: 0;
+    background: transparent;
+  }
+
+  .handle.gap.vertical {
+    width: auto;
+    height: 8px;
   }
 
   .handle.line::after {
