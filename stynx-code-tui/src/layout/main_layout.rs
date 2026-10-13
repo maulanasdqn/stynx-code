@@ -70,7 +70,7 @@ impl MainLayout {
         let content = input_lines.clamp(1, 8) as u16;
         let input_h = (content + 2).min(main.height.saturating_sub(5));
         let thinking_h: u16 = if thinking_lines == 0 { 0 } else { (1 + thinking_lines.min(12)) as u16 };
-        let delegate_h: u16 = delegate_lines.min(4) as u16;
+        let delegate_h: u16 = delegate_lines.min(8) as u16;
 
         let mut constraints: Vec<Constraint> = vec![Constraint::Min(1)];
         if thinking_h > 0 { constraints.push(Constraint::Length(thinking_h)); }

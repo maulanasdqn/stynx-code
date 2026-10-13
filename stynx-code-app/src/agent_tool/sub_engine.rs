@@ -114,10 +114,10 @@ impl SubEngine {
                     EngineEvent::ToolStart { name, .. } => {
                         sub_agent_sink::send(EngineEvent::SubAgentProgress {
                             label: label_for_cb.clone(),
-                            summary: format!("calling {name}…"),
+                            summary: format!("{name}…"),
                         });
                         if let Some(r) = &reporter {
-                            r(format!("calling {name}…"));
+                            r(format!("{name}…"));
                         }
                         a.current_tool = Some((name, String::new()));
                     }
@@ -243,26 +243,69 @@ fn summarize_action(name: &str, input_json: &str, output: &str, is_error: bool) 
             .unwrap_or("")
             .to_string()
     };
+
+    let result_hint = |out: &str| -> String {
+        let n = out.lines().filter(|l| !l.trim().is_empty()).count();
+        if n > 0 { format!(" → {n} lines") } else { String::new() }
+    };
+
     let head = match name {
-        "bash" => format!("bash $ {}", first_line_trunc(&get_str("command"), 100)),
-        "read" => format!("read {}", get_str("file_path")),
-        "file_write" => format!("write {}", get_str("file_path")),
-        "file_edit" => format!("edit {}", get_str("file_path")),
-        "glob" => format!("glob {}", get_str("pattern")),
+        "bash" => format!("$ {}", first_line_trunc(&get_str("command"), 120)),
+        "read" => {
+            let path = get_str("file_path");
+            let offset = parsed.as_ref().and_then(|v| v.get("offset")).and_then(|v| v.as_u64());
+            let limit = parsed.as_ref().and_then(|v| v.get("limit")).and_then(|v| v.as_u64());
+            match (offset, limit) {
+                (Some(o), Some(l)) => format!("read {path}:{o}-{}", o + l),
+                (Some(o), None) => format!("read {path}:{o}-"),
+                _ => format!("read {path}"),
+            }
+        }
+        "file_write" => {
+            let path = get_str("file_path");
+            let n = parsed.as_ref()
+                .and_then(|v| v.get("content"))
+                .and_then(|v| v.as_str())
+                .map(|s| s.lines().count())
+                .unwrap_or(0);
+            if n > 0 { format!("write {path} ({n} lines)") } else { format!("write {path}") }
+        }
+        "file_edit" => {
+            let path = get_str("file_path");
+            let old_n = parsed.as_ref()
+                .and_then(|v| v.get("old_string"))
+                .and_then(|v| v.as_str())
+                .map(|s| s.lines().count())
+                .unwrap_or(0);
+            let new_n = parsed.as_ref()
+                .and_then(|v| v.get("new_string"))
+                .and_then(|v| v.as_str())
+                .map(|s| s.lines().count())
+                .unwrap_or(0);
+            format!("edit {path} (-{old_n}/+{new_n})")
+        }
+        "glob" => {
+            let pattern = get_str("pattern");
+            let n = output.lines().filter(|l| !l.trim().is_empty()).count();
+            if n > 0 { format!("glob {pattern} → {n} matches") } else { format!("glob {pattern}") }
+        }
         "grep" => {
             let p = get_str("pattern");
             let path = get_str("path");
-            if path.is_empty() { format!("grep {p}") } else { format!("grep {p} in {path}") }
+            let n = output.lines().filter(|l| !l.trim().is_empty()).count();
+            let loc = if path.is_empty() { String::new() } else { format!(" in {path}") };
+            if n > 0 { format!("grep '{p}'{loc} → {n} hits") } else { format!("grep '{p}'{loc}") }
         }
         other => format!("{other}"),
     };
     let tail = if is_error {
-        format!(" — ERROR: {}", first_line_trunc(output, 120))
-    } else if name == "bash" || name == "file_write" || name == "file_edit" {
-        let line_count = output.lines().filter(|l| !l.trim().is_empty()).count();
-        if line_count > 0 { format!(" ({line_count} output lines)") } else { String::new() }
+        format!(" ✗ {}", first_line_trunc(output, 120))
     } else {
-        String::new()
+        match name {
+            "bash" => result_hint(output),
+            "read" => result_hint(output),
+            _ => String::new(),
+        }
     };
     format!("{head}{tail}")
 }

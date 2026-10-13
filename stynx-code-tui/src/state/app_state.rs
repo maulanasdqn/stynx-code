@@ -80,7 +80,7 @@ pub struct AppState {
 
     pub live_thinking: String,
 
-    pub sub_agents: Vec<(String, String)>,
+    pub sub_agents: Vec<SubAgentState>,
 
     pub last_summary: Option<Vec<String>>,
 
@@ -97,6 +97,35 @@ pub struct ToolHistoryState {
     pub scroll: usize,
     pub focused: bool,
     pub detail_open: bool,
+}
+
+const MAX_QUEUE: usize = 8;
+
+#[derive(Clone)]
+pub struct SubAgentState {
+    pub label: String,
+    pub current: String,
+    pub queue: Vec<String>,
+    pub step: usize,
+}
+
+impl SubAgentState {
+    pub fn new(label: String, summary: String) -> Self {
+        Self { label, current: summary.clone(), queue: vec![summary], step: 1 }
+    }
+
+    pub fn push(&mut self, summary: String) {
+        self.step += 1;
+        self.current = summary.clone();
+        self.queue.push(summary);
+        if self.queue.len() > MAX_QUEUE {
+            self.queue.remove(0);
+        }
+    }
+
+    pub fn display_lines(&self) -> usize {
+        1 + self.queue.len().min(5)
+    }
 }
 
 impl AppState {
@@ -368,9 +397,9 @@ impl AppState {
                 self.permission_mode = mode.label().to_string();
             }
             EngineEvent::SubAgentProgress { label, summary } => {
-                match self.sub_agents.iter_mut().find(|(l, _)| l == &label) {
-                    Some((_, s)) => *s = summary.clone(),
-                    None => self.sub_agents.push((label.clone(), summary.clone())),
+                match self.sub_agents.iter_mut().find(|a| a.label == label) {
+                    Some(a) => a.push(summary.clone()),
+                    None => self.sub_agents.push(SubAgentState::new(label.clone(), summary.clone())),
                 }
                 if let Some(m) = self.conversation.messages.last_mut() {
                     if let Some(t) = m.tool_uses.iter_mut().rev()
@@ -387,15 +416,13 @@ impl AppState {
                 }
             }
             EngineEvent::SubAgentDone { label } => {
-                // Surface a notify card when a delegated agent/intern finishes,
-                // carrying its last recorded action as the card body.
                 let last = self
                     .sub_agents
                     .iter()
-                    .find(|(l, _)| l == &label)
-                    .map(|(_, s)| s.clone())
+                    .find(|a| a.label == label)
+                    .map(|a| a.current.clone())
                     .filter(|s| !s.trim().is_empty());
-                self.sub_agents.retain(|(l, _)| l != &label);
+                self.sub_agents.retain(|a| a.label != label);
                 let msg = match last {
                     Some(s) => format!("{label} done\n{s}"),
                     None => format!("{label} done"),

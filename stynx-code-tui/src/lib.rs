@@ -133,6 +133,9 @@ impl TuiApp {
         }
         s.live_thinking.len().hash(&mut h);
         s.sub_agents.len().hash(&mut h);
+        for a in &s.sub_agents {
+            a.step.hash(&mut h);
+        }
         s.total_input.hash(&mut h);
         s.total_output.hash(&mut h);
         s.model_name.hash(&mut h);

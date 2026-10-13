@@ -33,7 +33,7 @@ impl Renderer {
             0
         };
 
-        let delegate_lines = state.sub_agents.len();
+        let delegate_lines = DelegateBar::total_lines(&state.sub_agents);
         let has_summary = state.last_summary.is_some();
         let summary_items: Option<Vec<String>> = state.last_summary.clone();
         let layout = MainLayout::split(
