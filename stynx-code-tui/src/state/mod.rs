@@ -5,8 +5,8 @@ pub mod modal_state;
 pub mod qa_state;
 pub mod toast_state;
 
-pub use app_state::{AppState, SubAgentState, ToolHistoryState};
-pub use conversation_state::{ConversationState, DiffLine, DiffLineKind, DisplayMessage, DisplayToolUse, ToolUseStatus};
+pub use app_state::{AppState, DiffPanelState, SubAgentState};
+pub use conversation_state::{ConversationState, DiffLine, DiffLineKind, DisplayMessage, DisplayToolUse, MessagePart, ToolUseStatus};
 pub use input_state::{InputState};
 pub use modal_state::{
     DialogOption, InputKind, ModalKind, ModalState, PermissionChoice, SelectKind, filter_options,

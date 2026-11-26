@@ -154,7 +154,11 @@ impl ModalState {
     pub fn open_ask(&mut self, raw: String) {
         match super::qa_state::parse_qa(&raw) {
             Some(questions) => self.active = Some(ModalKind::Question(super::qa_state::QaState::new(questions))),
-            None => self.open_input("Question", raw, String::new(), InputKind::AskUserQuestion),
+            // Never show the raw marker and JSON if the payload does not parse.
+            None => {
+                let prompt = super::qa_state::readable_prompt(&raw);
+                self.open_input("Question", prompt, String::new(), InputKind::AskUserQuestion)
+            }
         }
     }
 

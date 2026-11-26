@@ -16,7 +16,7 @@ pub struct StatusLine<'a> {
     pub state: &'a AppState,
 }
 
-fn display_model(model: &str) -> String {
+pub fn display_model(model: &str) -> String {
     let base = model.rsplit('/').next().unwrap_or(model);
     let (base, long_context) = match base.strip_suffix("[1m]") {
         Some(stripped) => (stripped, true),

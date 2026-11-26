@@ -7,6 +7,7 @@ use ratatui::{
 };
 
 use crate::theme;
+use crate::widgets::toast::wrap_plain;
 
 pub struct InputDialog<'a> {
     pub title: &'a str,
@@ -23,7 +24,7 @@ impl<'a> InputDialog<'a> {
 impl<'a> Widget for InputDialog<'a> {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let w = 76.min(area.width.saturating_sub(4));
-        let lines = self.lines();
+        let lines = self.lines(w.saturating_sub(2) as usize);
         let content = Paragraph::new(lines.clone()).wrap(Wrap { trim: false }).line_count(w.saturating_sub(2)) as u16;
         let h = (content + 2).min(area.height.saturating_sub(2));
         let x = area.x + (area.width.saturating_sub(w)) / 2;
@@ -51,16 +52,22 @@ impl<'a> Widget for InputDialog<'a> {
 }
 
 impl<'a> InputDialog<'a> {
-    fn lines(&self) -> Vec<Line<'static>> {
+    fn lines(&self, width: usize) -> Vec<Line<'static>> {
         let mut lines = vec![
             Line::from(""),
         ];
-        lines.extend(self.prompt.lines().map(|line| {
-            Line::from(Span::styled(
-                format!("  {line}"),
-                Style::default().fg(theme::TEXT()).bg(theme::BACKGROUND_PANEL()),
-            ))
-        }));
+        let style = Style::default().fg(theme::TEXT()).bg(theme::BACKGROUND_PANEL());
+        for line in self.prompt.lines() {
+            // Wrap here so that wrapped rows keep the indent; bullet rows hang under their text.
+            let body = line.trim_start();
+            let lead = 2 + line.len() - body.len();
+            let hang = if body.starts_with("• ") { 2 } else { 0 };
+            let rows = wrap_plain(body, width.saturating_sub(lead + hang).max(10));
+            for (i, row) in rows.into_iter().enumerate() {
+                let indent = if i == 0 { lead } else { lead + hang };
+                lines.push(Line::from(Span::styled(format!("{}{row}", " ".repeat(indent)), style)));
+            }
+        }
         lines.extend(vec![
             Line::from(""),
             Line::from(vec![

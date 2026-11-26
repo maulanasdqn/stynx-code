@@ -13,7 +13,7 @@ pub(super) fn conv_to_tui(conversation: &Conversation) -> Vec<DisplayMessage> {
             content: text,
             thinking: String::new(),
             tool_uses: Vec::new(),
-            is_streaming: false,
+            is_streaming: false, parts: Vec::new(), footer: None,
         })
     }).collect()
 }

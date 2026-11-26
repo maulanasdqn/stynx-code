@@ -125,12 +125,8 @@ fn dispatch_palette(state: &mut AppState, command: &str) -> UiAction {
         "model.list" => { open_model_picker(state); UiAction::None }
         "model.cycle_recent" => UiAction::RunCommand("model.cycle_recent".into()),
         "mode.cycle" => UiAction::CyclePermissionMode,
-        "tools.focus" => {
-            state.tool_history.focused = true;
-            if state.tool_history.selected.is_none() {
-                let total = crate::widgets::tool_history::flat_rows(state).len();
-                if total > 0 { state.tool_history.selected = Some(total - 1); }
-            }
+        "diff.focus" => {
+            state.diff_panel.focused = true;
             UiAction::None
         }
         "theme.switch" => { crate::dialogs::open_theme_picker(state); UiAction::None }
@@ -176,8 +172,8 @@ impl EventHandler {
             Event::Key(key) => {
                 if key.kind != KeyEventKind::Press { return UiAction::None; }
                 if state.modal.active.is_some() { return Self::modal_key(key, state); }
-                if state.tool_history.focused && !key.modifiers.contains(KeyModifiers::CONTROL) {
-                    return Self::tool_history_key(key, state);
+                if state.diff_panel.focused && !key.modifiers.contains(KeyModifiers::CONTROL) {
+                    return Self::diff_panel_key(key, state);
                 }
                 Self::input_key(key, state)
             }
@@ -204,11 +200,7 @@ impl EventHandler {
                 UiAction::None
             }
             (KeyCode::Char('t'), KeyModifiers::CONTROL) => {
-                state.tool_history.focused = !state.tool_history.focused;
-                if state.tool_history.focused && state.tool_history.selected.is_none() {
-                    let total = crate::widgets::tool_history::flat_rows(state).len();
-                    if total > 0 { state.tool_history.selected = Some(total - 1); }
-                }
+                state.diff_panel.focused = !state.diff_panel.focused;
                 UiAction::None
             }
             (KeyCode::Char('v'), KeyModifiers::CONTROL) => {
@@ -343,46 +335,20 @@ impl EventHandler {
         }
     }
 
-    fn tool_history_key(key: KeyEvent, state: &mut AppState) -> UiAction {
-        use crate::widgets::tool_history::flat_rows;
-        let total = flat_rows(state).len();
+    fn diff_panel_key(key: KeyEvent, state: &mut AppState) -> UiAction {
+        let panel = &mut state.diff_panel;
         match key.code {
-            KeyCode::Esc | KeyCode::Char('h') | KeyCode::Left => {
-                if state.tool_history.detail_open {
-                    state.tool_history.detail_open = false;
-                } else {
-                    state.tool_history.focused = false;
-                }
-                UiAction::None
-            }
-            KeyCode::Up | KeyCode::Char('k') => {
-                if total == 0 { return UiAction::None; }
-                let cur = state.tool_history.selected.unwrap_or(0);
-                state.tool_history.selected = Some(cur.saturating_sub(1));
-                UiAction::None
-            }
-            KeyCode::Down | KeyCode::Char('j') => {
-                if total == 0 { return UiAction::None; }
-                let cur = state.tool_history.selected.unwrap_or(total - 1);
-                state.tool_history.selected = Some((cur + 1).min(total - 1));
-                UiAction::None
-            }
-            KeyCode::Char('g') => {
-                if total > 0 { state.tool_history.selected = Some(0); }
-                UiAction::None
-            }
-            KeyCode::Char('G') => {
-                if total > 0 { state.tool_history.selected = Some(total - 1); }
-                UiAction::None
-            }
-            KeyCode::Enter | KeyCode::Char('l') | KeyCode::Right => {
-                if state.tool_history.selected.is_some() {
-                    state.tool_history.detail_open = true;
-                }
-                UiAction::None
-            }
-            _ => UiAction::None,
+            KeyCode::Esc | KeyCode::Char('h') | KeyCode::Left => panel.focused = false,
+            KeyCode::Up | KeyCode::Char('k') => panel.scroll = panel.scroll.saturating_sub(1),
+            KeyCode::Down | KeyCode::Char('j') => panel.scroll = panel.scroll.saturating_add(1),
+            KeyCode::PageUp => panel.scroll = panel.scroll.saturating_sub(10),
+            KeyCode::PageDown => panel.scroll = panel.scroll.saturating_add(10),
+            KeyCode::Char('g') => panel.scroll = 0,
+            // The panel clamps the scroll to the real bottom when it renders.
+            KeyCode::Char('G') => panel.scroll = usize::MAX,
+            _ => {}
         }
+        UiAction::None
     }
 
     fn modal_key(key: KeyEvent, state: &mut AppState) -> UiAction {

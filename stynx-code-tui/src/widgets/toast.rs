@@ -25,7 +25,7 @@ impl<'a> Widget for ToastStack<'a> {
             return;
         }
 
-        // Noice-style notify cards: rounded, level-colored, stacked top-right.
+        // Solid notify cards with a level-colored left bar, stacked top-right.
         let max_box_w = 48u16.min(area.width.saturating_sub(2));
         if max_box_w < 14 {
             return;
@@ -48,7 +48,7 @@ impl<'a> Widget for ToastStack<'a> {
                 None => (toast.message.as_str(), ""),
             };
 
-            // Inside the borders we reserve: "│ " + 2-col icon gutter + text + " │".
+            // Around the text we reserve: bar + " " + 2-col icon gutter + "  ".
             let text_w = (max_box_w as usize).saturating_sub(6).max(1);
             let mut wrapped: Vec<(String, bool)> = Vec::new(); // (text, is_title)
             for line in wrap_plain(title, text_w) {
@@ -61,65 +61,47 @@ impl<'a> Widget for ToastStack<'a> {
             }
 
             let longest = wrapped.iter().map(|(l, _)| l.chars().count()).max().unwrap_or(0);
-            let inner = longest + 2; // text + 2-col icon gutter
-            let box_w = (inner + 4) as u16; // "│ " + inner + " │"
-            let box_h = wrapped.len() as u16 + 2; // top + body + bottom
+            let box_w = (longest + 6) as u16; // bar + " " + 2-col icon gutter + text + "  "
+            let box_h = wrapped.len() as u16 + 2; // padding row above and below
 
             if y + box_h > area.y + area.height {
                 break;
             }
 
             let x = right_edge.saturating_sub(box_w);
-            let border = Style::default().fg(color).bg(bg);
-            let dash: String = "\u{2500}".repeat(inner + 2);
+            let fill = Style::default().bg(bg);
+            let bar = Span::styled("\u{258C}".to_string(), Style::default().fg(color).bg(bg));
 
-            // Top border.
-            let top = Rect { x, y, width: box_w, height: 1 };
-            Clear.render(top, buf);
-            Paragraph::new(Line::from(Span::styled(format!("\u{256D}{dash}\u{256E}"), border)))
-                .style(Style::default().bg(bg))
-                .render(top, buf);
-
-            // Body rows.
-            for (i, (text, is_title)) in wrapped.iter().enumerate() {
-                let row = Rect { x, y: y + 1 + i as u16, width: box_w, height: 1 };
+            for row_i in 0..box_h {
+                let row = Rect { x, y: y + row_i, width: box_w, height: 1 };
                 Clear.render(row, buf);
-                let gutter = if i == 0 {
-                    Span::styled(format!("{icon} "), border.add_modifier(Modifier::BOLD))
-                } else {
-                    Span::styled("  ".to_string(), Style::default().bg(bg))
-                };
-                let text_style = if *is_title {
-                    Style::default().fg(theme::TEXT()).bg(bg).add_modifier(Modifier::BOLD)
-                } else {
-                    Style::default().fg(theme::SUBTLE()).bg(bg)
-                };
-                let pad = longest.saturating_sub(text.chars().count());
-                let line = Line::from(vec![
-                    Span::styled("\u{2502} ".to_string(), border),
-                    gutter,
-                    Span::styled(text.clone(), text_style),
-                    Span::styled(" ".repeat(pad), Style::default().bg(bg)),
-                    Span::styled(" \u{2502}".to_string(), border),
-                ]);
-                Paragraph::new(line).style(Style::default().bg(bg)).render(row, buf);
+                let mut spans = vec![bar.clone(), Span::styled(" ".to_string(), fill)];
+                let content = row_i.checked_sub(1).and_then(|i| wrapped.get(i as usize));
+                if let Some((text, is_title)) = content {
+                    let gutter = if row_i == 1 {
+                        Span::styled(format!("{icon} "), Style::default().fg(color).bg(bg).add_modifier(Modifier::BOLD))
+                    } else {
+                        Span::styled("  ".to_string(), fill)
+                    };
+                    let text_style = if *is_title {
+                        Style::default().fg(theme::TEXT()).bg(bg).add_modifier(Modifier::BOLD)
+                    } else {
+                        Style::default().fg(theme::SUBTLE()).bg(bg)
+                    };
+                    spans.push(gutter);
+                    spans.push(Span::styled(text.clone(), text_style));
+                }
+                Paragraph::new(Line::from(spans)).style(fill).render(row, buf);
             }
 
-            // Bottom border.
-            let bot = Rect { x, y: y + 1 + wrapped.len() as u16, width: box_w, height: 1 };
-            Clear.render(bot, buf);
-            Paragraph::new(Line::from(Span::styled(format!("\u{2570}{dash}\u{256F}"), border)))
-                .style(Style::default().bg(bg))
-                .render(bot, buf);
-
-            y = bot.y + 2; // one-row gap between cards
+            y += box_h + 1; // one-row gap between cards
         }
     }
 }
 
 /// Greedy word-wrap a plain string to `width` columns, hard-splitting any word
 /// longer than the line.
-fn wrap_plain(s: &str, width: usize) -> Vec<String> {
+pub(crate) fn wrap_plain(s: &str, width: usize) -> Vec<String> {
     let width = width.max(1);
     let mut lines: Vec<String> = Vec::new();
     let mut cur = String::new();

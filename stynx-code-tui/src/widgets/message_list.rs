@@ -9,7 +9,7 @@ use ratatui::{
 use ratatui::layout::Alignment;
 
 use crate::state::conversation_state::{BlockKey, RenderedBlock};
-use crate::state::ConversationState;
+use crate::state::{ConversationState, DisplayMessage, ToolUseStatus};
 use crate::theme;
 use super::message_block::render_message;
 
@@ -60,7 +60,8 @@ impl<'a> Widget for MessageList<'a> {
         cache.truncate(messages.len());
 
         for (i, msg) in messages.iter().enumerate() {
-            let live_spinner = msg.is_streaming && self.thinking_active && msg.content.trim().is_empty();
+            let running_tool = msg.tool_uses.iter().any(|t| t.status == ToolUseStatus::Running);
+            let live_spinner = running_tool || (msg.is_streaming && self.thinking_active && msg.content.trim().is_empty());
             let key = BlockKey {
                 content_len: msg.content.len(),
                 thinking_len: msg.thinking.len(),
@@ -68,11 +69,13 @@ impl<'a> Widget for MessageList<'a> {
                 width,
                 theme: theme_id,
                 spin: if live_spinner { spin } else { ' ' },
+                tools: tools_signature(msg),
+                details: self.tool_details,
             };
             if cache.get(i).is_some_and(|block| block.key == key) {
                 continue;
             }
-            let mut lines = render_message(msg, usize::from(width), spin, self.thinking_active);
+            let mut lines = render_message(msg, usize::from(width), spin, self.thinking_active, self.tool_details);
             lines.push(Line::from(""));
             let height = Paragraph::new(lines.clone()).wrap(Wrap { trim: false }).line_count(width);
             let block = RenderedBlock { key, lines, height };
@@ -129,6 +132,23 @@ impl<'a> Widget for MessageList<'a> {
     }
 }
 
+/// Hash of everything about a message's tool calls and footer that changes how it renders.
+fn tools_signature(msg: &DisplayMessage) -> u64 {
+    use std::hash::{Hash, Hasher};
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    msg.parts.len().hash(&mut hasher);
+    msg.footer.hash(&mut hasher);
+    for tool in &msg.tool_uses {
+        (tool.status as u8).hash(&mut hasher);
+        tool.input_summary.hash(&mut hasher);
+        tool.output_preview.hash(&mut hasher);
+        tool.output_excerpt.hash(&mut hasher);
+        tool.diff.len().hash(&mut hasher);
+        tool.live_output.len().hash(&mut hasher);
+        tool.sub_progress.len().hash(&mut hasher);
+    }
+    hasher.finish()
+}
 
 const LOGO_ART: &[&str] = &[
     r" ____   _____ __   __ _   _ __  __",
@@ -141,7 +161,7 @@ const LOGO_SUBTITLE: &str = "c   o   d   e";
 
 const HINTS: &[(&str, &str)] = &[
     ("^P",    "command palette"),
-    ("^T",    "focus tools"),
+    ("^T",    "focus diff"),
     ("^M",    "switch model"),
     ("/help", "show help"),
 ];

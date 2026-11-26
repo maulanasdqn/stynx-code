@@ -84,11 +84,18 @@ fn cell_text_width(cell: &str) -> usize {
 /// never overflow. Returns at least one (possibly empty) line.
 fn wrap_spans(spans: &[Span<'static>], width: usize) -> Vec<Vec<Span<'static>>> {
     let width = width.max(1);
-    let mut words: Vec<(String, Style)> = Vec::new();
+    // (word, style, glued): a glued word touches the previous one with no space,
+    // e.g. the "." after a **bold** span.
+    let mut words: Vec<(String, Style, bool)> = Vec::new();
+    let mut after_space = true;
     for s in spans {
-        for w in s.content.split(' ') {
+        for (i, w) in s.content.split(' ').enumerate() {
+            if i > 0 {
+                after_space = true;
+            }
             if !w.is_empty() {
-                words.push((w.to_string(), s.style));
+                words.push((w.to_string(), s.style, !after_space));
+                after_space = false;
             }
         }
     }
@@ -97,7 +104,7 @@ fn wrap_spans(spans: &[Span<'static>], width: usize) -> Vec<Vec<Span<'static>>> 
     let mut cur: Vec<Span<'static>> = Vec::new();
     let mut cur_w = 0usize;
 
-    for (word, style) in words {
+    for (word, style, glued) in words {
         let wlen = word.chars().count();
         if wlen > width {
             // Hard-split an unbreakable token across as many lines as needed.
@@ -120,12 +127,12 @@ fn wrap_spans(spans: &[Span<'static>], width: usize) -> Vec<Vec<Span<'static>>> 
             }
             continue;
         }
-        let need = if cur_w == 0 { wlen } else { wlen + 1 };
+        let need = if cur_w == 0 || glued { wlen } else { wlen + 1 };
         if cur_w > 0 && cur_w + need > width {
             lines.push(std::mem::take(&mut cur));
             cur_w = 0;
         }
-        if cur_w > 0 {
+        if cur_w > 0 && !glued {
             cur.push(Span::styled(" ".to_string(), Style::default()));
             cur_w += 1;
         }

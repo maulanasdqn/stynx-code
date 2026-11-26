@@ -210,3 +210,14 @@ pub fn set_theme(id: &str) -> bool {
 #[allow(non_snake_case)] pub fn SUCCESS()            -> Color { current().success }
 #[allow(non_snake_case)] pub fn WARNING()            -> Color { current().warning }
 #[allow(non_snake_case)] pub fn ERROR()              -> Color { current().error }
+
+/// Mix `fg` into `bg` by `amount` (0.0 = bg, 1.0 = fg). Non-RGB colors return `bg`.
+pub fn blend(fg: Color, bg: Color, amount: f32) -> Color {
+    match (fg, bg) {
+        (Color::Rgb(fr, fg_, fb), Color::Rgb(br, bg_, bb)) => {
+            let mix = |f: u8, b: u8| (b as f32 + (f as f32 - b as f32) * amount).round() as u8;
+            Color::Rgb(mix(fr, br), mix(fg_, bg_), mix(fb, bb))
+        }
+        _ => bg,
+    }
+}

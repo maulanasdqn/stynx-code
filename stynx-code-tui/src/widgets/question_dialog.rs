@@ -8,13 +8,14 @@ use ratatui::{
 
 use crate::state::QaState;
 use crate::theme;
+use crate::widgets::toast::wrap_plain;
 
 pub struct QuestionDialog<'a> {
     pub qa: &'a QaState,
 }
 
 impl<'a> QuestionDialog<'a> {
-    fn lines(&self) -> Vec<Line<'static>> {
+    fn lines(&self, width: usize) -> Vec<Line<'static>> {
         let qa = self.qa;
         let q = qa.current();
         let panel = theme::BACKGROUND_PANEL();
@@ -39,10 +40,10 @@ impl<'a> QuestionDialog<'a> {
             lines.push(Line::from(""));
         }
 
-        lines.push(Line::from(Span::styled(
-            format!("  {}", q.question),
-            Style::default().fg(theme::TEXT()).bg(panel).add_modifier(Modifier::BOLD),
-        )));
+        let title = Style::default().fg(theme::TEXT()).bg(panel).add_modifier(Modifier::BOLD);
+        for row in wrap_plain(&q.question, width.saturating_sub(4).max(10)) {
+            lines.push(Line::from(Span::styled(format!("  {row}"), title)));
+        }
         if q.multi_select {
             lines.push(Line::from(Span::styled("  Select all that apply", dim)));
         }
@@ -87,7 +88,9 @@ impl<'a> QuestionDialog<'a> {
             }
             lines.push(Line::from(spans));
             if let Some(description) = description {
-                lines.push(Line::from(Span::styled(format!("           {description}"), dim)));
+                for row in wrap_plain(&description, width.saturating_sub(13).max(10)) {
+                    lines.push(Line::from(Span::styled(format!("           {row}"), dim)));
+                }
             }
         }
 
@@ -117,8 +120,8 @@ impl<'a> QuestionDialog<'a> {
 impl<'a> Widget for QuestionDialog<'a> {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let width = 76.min(area.width.saturating_sub(4));
-        let lines = self.lines();
         let inner_width = width.saturating_sub(2);
+        let lines = self.lines(inner_width as usize);
         let content_height = Paragraph::new(lines.clone()).wrap(Wrap { trim: false }).line_count(inner_width) as u16;
         let height = (content_height + 3).min(area.height.saturating_sub(2));
         let x = area.x + area.width.saturating_sub(width) / 2;

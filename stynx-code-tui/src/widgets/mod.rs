@@ -3,6 +3,7 @@ pub mod banner;
 pub mod context_panel;
 pub mod cost_display;
 pub mod delegate_bar;
+pub mod diff_panel;
 pub mod dialog_select;
 pub mod footer;
 pub mod info_dialog;
@@ -25,9 +26,6 @@ pub mod status_line;
 pub mod thinking_panel;
 pub mod toast;
 pub mod summary_bar;
-pub mod tool_detail;
-pub mod tool_history;
-pub mod tool_label;
 pub mod tool_progress;
 
 pub use dialog_select::DialogSelect;

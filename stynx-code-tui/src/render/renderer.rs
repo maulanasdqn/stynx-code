@@ -6,8 +6,7 @@ use crate::layout::MainLayout;
 use crate::state::{AppState, ModalKind};
 use crate::theme;
 use crate::widgets::delegate_bar::DelegateBar;
-use crate::widgets::tool_detail::ToolDetail;
-use crate::widgets::tool_history::{flat_rows, HistoryRow, ToolHistory};
+use crate::widgets::diff_panel::DiffPanel;
 use crate::widgets::context_panel::panel_lines;
 use crate::widgets::{ContextPanel, DialogSelect, InfoDialog, InputBox, InputDialog, MessageList, PermissionDialog, SlashPopover, StatusLine, SummaryBar, ThinkingPanel, ToastStack};
 
@@ -48,9 +47,8 @@ impl Renderer {
             panel_lines(state, usize::from(MainLayout::TOOL_HISTORY_WIDTH)).len(),
         );
 
-        let tool_area = layout.tool_history;
-        if let Some(area) = tool_area {
-            frame.render_widget(ToolHistory::new(state), area);
+        if let Some(area) = layout.diff {
+            frame.render_widget(DiffPanel::new(state), area);
         }
         if let Some(info_area) = layout.tool_info {
             frame.render_widget(ContextPanel { state }, info_area);
@@ -86,20 +84,6 @@ impl Renderer {
         }
 
         frame.render_widget(ToastStack::new(&state.toasts), full);
-
-        if state.tool_history.detail_open {
-            if let Some(idx) = state.tool_history.selected {
-                let rows = flat_rows(state);
-                if let Some(row) = rows.get(idx) {
-                    let (mi, ti) = match row {
-                        HistoryRow::Tool { msg, tool } => (*msg, *tool),
-                        HistoryRow::Sub { msg, tool, .. } => (*msg, *tool),
-                    };
-                    let tool = &state.conversation.messages[mi].tool_uses[ti];
-                    frame.render_widget(ToolDetail::new(tool), full);
-                }
-            }
-        }
 
         match &state.modal.active {
             Some(ModalKind::Permission { tool_name, description, choice }) => {

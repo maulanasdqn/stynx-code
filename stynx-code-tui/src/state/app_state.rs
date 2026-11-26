@@ -1,5 +1,5 @@
 use stynx_code_types::EngineEvent;
-use super::{ConversationState, DiffLine, DiffLineKind, DisplayMessage, DisplayToolUse, InputState, ModalState, ToastState, ToolUseStatus};
+use super::{ConversationState, DiffLine, DiffLineKind, DisplayMessage, DisplayToolUse, InputState, MessagePart, ModalState, ToastState, ToolUseStatus};
 
 /// USD price per million tokens `(input, output)` for a given model.
 ///
@@ -13,8 +13,14 @@ fn model_pricing(model: &str) -> (f64, f64) {
         _ if m.contains("deepseek-reasoner") || m.contains("deepseek-r1") => (0.55, 2.19),
         _ if m.contains("deepseek") => (0.27, 1.10),
         // Anthropic
+        _ if m.contains("fable") || m.contains("mythos") => (10.0, 50.0),
+        _ if m.contains("opus-5-5") => (4.0, 20.0),
+        _ if m.contains("opus-5") || m.contains("opus-4-5") || m.contains("opus-4-6") || m.contains("opus-4-7") || m.contains("opus-4-8") => (5.0, 25.0),
         _ if m.contains("opus") => (15.0, 75.0),
+        _ if m.contains("haiku-5") => (0.10, 0.50),
+        _ if m.contains("haiku-4-5") => (1.0, 5.0),
         _ if m.contains("haiku") => (0.80, 4.0),
+        _ if m.contains("sonnet-5") => (2.0, 10.0),
         _ if m.contains("sonnet") => (3.0, 15.0),
         // OpenAI (common ones)
         _ if m.contains("gpt-4o-mini") => (0.15, 0.60),
@@ -84,7 +90,10 @@ pub struct AppState {
 
     pub last_summary: Option<Vec<String>>,
 
-    pub tool_history: ToolHistoryState,
+    pub diff_panel: DiffPanelState,
+    /// Set when a tool starts, so the next text segment of the same turn
+    /// begins on a new paragraph instead of running into the previous one.
+    pub text_break: bool,
 
     pub is_pending: bool,
     pub elapsed_secs: u64,
@@ -92,11 +101,9 @@ pub struct AppState {
 }
 
 #[derive(Default)]
-pub struct ToolHistoryState {
-    pub selected: Option<usize>,
+pub struct DiffPanelState {
     pub scroll: usize,
     pub focused: bool,
-    pub detail_open: bool,
 }
 
 const MAX_QUEUE: usize = 8;
@@ -155,7 +162,7 @@ impl AppState {
             modal: ModalState::new(),
             sidebar: SidebarState::new(),
             toasts: ToastState::new(),
-            model_name: String::from("claude-sonnet-4-20250514"),
+            model_name: String::from("claude-opus-4-8"),
             permission_mode: String::from("Normal"),
             total_cost: 0.0,
             git_branch: None,
@@ -175,7 +182,8 @@ impl AppState {
             live_thinking: String::new(),
             sub_agents: Vec::new(),
             last_summary: None,
-            tool_history: ToolHistoryState::default(),
+            diff_panel: DiffPanelState::default(),
+            text_break: false,
             is_pending: false,
             elapsed_secs: 0,
             stale_warned: false,
@@ -190,9 +198,16 @@ impl AppState {
             content: text.into(),
             thinking: String::new(),
             tool_uses: Vec::new(),
-            is_streaming: false,
+            is_streaming: false, parts: Vec::new(), footer: None,
         });
         self.conversation.auto_scroll = true;
+    }
+
+    /// Attach the turn summary to the last assistant message.
+    pub fn set_turn_footer(&mut self, text: impl Into<String>) {
+        if let Some(m) = self.conversation.messages.iter_mut().rev().find(|m| m.role == "assistant") {
+            m.footer = Some(text.into());
+        }
     }
 
     pub fn push_system_message(&mut self, text: impl Into<String>) {
@@ -201,7 +216,7 @@ impl AppState {
             content: text.into(),
             thinking: String::new(),
             tool_uses: Vec::new(),
-            is_streaming: false,
+            is_streaming: false, parts: Vec::new(), footer: None,
         });
         self.conversation.auto_scroll = true;
     }
@@ -211,11 +226,23 @@ impl AppState {
         match event {
             EngineEvent::TextDelta(text) => {
                 self.is_streaming = true;
+                let text_break = std::mem::take(&mut self.text_break);
                 match self.conversation.messages.last_mut() {
-                    Some(m) if m.role == "assistant" && m.is_streaming => m.content.push_str(&text),
+                    Some(m) if m.role == "assistant" && m.is_streaming => {
+                        if text_break && !m.content.trim().is_empty() && !m.content.ends_with("\n\n") {
+                            let trimmed = m.content.trim_end_matches('\n').len();
+                            m.content.truncate(trimmed);
+                            m.content.push_str("\n\n");
+                        }
+                        m.content.push_str(&text);
+                        match m.parts.last_mut() {
+                            Some(MessagePart::Text(part)) => part.push_str(&text),
+                            _ => m.parts.push(MessagePart::Text(text)),
+                        }
+                    }
                     _ => self.conversation.messages.push(DisplayMessage {
-                        role: "assistant".to_string(), content: text,
-                        thinking: String::new(), tool_uses: Vec::new(), is_streaming: true,
+                        role: "assistant".to_string(), content: text.clone(),
+                        thinking: String::new(), tool_uses: Vec::new(), is_streaming: true, parts: vec![MessagePart::Text(text)], footer: None,
                     }),
                 }
             }
@@ -230,12 +257,13 @@ impl AppState {
                 {
                     self.conversation.messages.push(DisplayMessage {
                         role: "assistant".to_string(), content: String::new(),
-                        thinking: String::new(), tool_uses: Vec::new(), is_streaming: true,
+                        thinking: String::new(), tool_uses: Vec::new(), is_streaming: true, parts: Vec::new(), footer: None,
                     });
                 }
             }
             EngineEvent::ToolStart { name, .. } => {
                 self.is_streaming = true;
+                self.text_break = true;
                 let tool = DisplayToolUse {
                     name,
                     status: ToolUseStatus::Running,
@@ -248,10 +276,13 @@ impl AppState {
                     live_output: String::new(),
                 };
                 match self.conversation.messages.last_mut().filter(|m| m.role == "assistant") {
-                    Some(m) => m.tool_uses.push(tool),
+                    Some(m) => {
+                        m.parts.push(MessagePart::Tool(m.tool_uses.len()));
+                        m.tool_uses.push(tool);
+                    }
                     None => self.conversation.messages.push(DisplayMessage {
                         role: "assistant".to_string(), content: String::new(),
-                        thinking: String::new(), tool_uses: vec![tool], is_streaming: true,
+                        thinking: String::new(), tool_uses: vec![tool], is_streaming: true, parts: vec![MessagePart::Tool(0)], footer: None,
                     }),
                 }
             }
@@ -313,14 +344,9 @@ impl AppState {
                         }
                     }
                 }
+                // The failed tool line shows its own error; a separate message
+                // would also split the turn into two assistant messages.
                 if is_error {
-                    self.conversation.messages.push(DisplayMessage {
-                        role: "error".to_string(),
-                        content: format!("{name}: {clean_output}"),
-                        thinking: String::new(),
-                        tool_uses: Vec::new(),
-                        is_streaming: false,
-                    });
                     tracing::error!(tool = %name, output = %clean_output, "tool returned error");
                 }
             }
@@ -390,7 +416,7 @@ impl AppState {
                 self.is_streaming = false;
                 self.conversation.messages.push(DisplayMessage {
                     role: "error".to_string(), content: e,
-                    thinking: String::new(), tool_uses: Vec::new(), is_streaming: false,
+                    thinking: String::new(), tool_uses: Vec::new(), is_streaming: false, parts: Vec::new(), footer: None,
                 });
             }
             EngineEvent::ModeChanged { mode } => {
@@ -641,4 +667,33 @@ pub fn excerpt_lines(text: &str, max_lines: usize, max_width: usize) -> Vec<Stri
         lines.push(format!("… +{} more lines", total - max_lines));
     }
     lines
+}
+
+#[cfg(test)]
+mod text_break_tests {
+    use super::*;
+
+    #[test]
+    fn text_after_a_tool_starts_a_new_paragraph() {
+        let mut state = AppState::new();
+        state.apply_engine_event(EngineEvent::TextDelta("Checking the repo.".into()));
+        state.apply_engine_event(EngineEvent::ToolStart { name: "read".into(), id: "t1".into() });
+        state.apply_engine_event(EngineEvent::TextDelta("README matches.".into()));
+        state.apply_engine_event(EngineEvent::TextDelta(" Done.".into()));
+        assert_eq!(state.conversation.messages.last().unwrap().content, "Checking the repo.\n\nREADME matches. Done.");
+    }
+
+    #[test]
+    fn parts_keep_text_and_tools_in_stream_order() {
+        let mut state = AppState::new();
+        state.apply_engine_event(EngineEvent::TextDelta("Looking.".into()));
+        state.apply_engine_event(EngineEvent::ToolStart { name: "read".into(), id: "t1".into() });
+        state.apply_engine_event(EngineEvent::ToolStart { name: "grep".into(), id: "t2".into() });
+        state.apply_engine_event(EngineEvent::TextDelta("Found ".into()));
+        state.apply_engine_event(EngineEvent::TextDelta("it.".into()));
+        let parts = &state.conversation.messages.last().unwrap().parts;
+        assert!(matches!(&parts[..], [
+            MessagePart::Text(a), MessagePart::Tool(0), MessagePart::Tool(1), MessagePart::Text(b),
+        ] if a == "Looking." && b == "Found it."));
+    }
 }

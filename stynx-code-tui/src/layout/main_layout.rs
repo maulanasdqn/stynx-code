@@ -1,7 +1,7 @@
 use ratatui::layout::{Constraint, Layout, Rect};
 
 pub struct LayoutResult {
-    pub tool_history: Option<Rect>,
+    pub diff: Option<Rect>,
     pub tool_info: Option<Rect>,
     pub messages: Rect,
     pub thinking: Option<Rect>,
@@ -58,7 +58,7 @@ impl MainLayout {
             (chunks[1], None)
         };
 
-        let (tool_info, tool_history) = match side {
+        let (tool_info, diff) = match side {
             Some(col) => {
                 let info_h = (info_lines as u16 + 1).min(col.height.saturating_sub(6));
                 let parts = Layout::vertical([Constraint::Length(info_h), Constraint::Min(1)]).split(col);
@@ -88,6 +88,6 @@ impl MainLayout {
         let input = rows[idx]; idx += 1;
         let footer = Some(rows[idx]);
 
-        LayoutResult { tool_history, tool_info, messages, thinking, delegate, summary, input, footer }
+        LayoutResult { diff, tool_info, messages, thinking, delegate, summary, input, footer }
     }
 }

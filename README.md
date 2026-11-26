@@ -263,7 +263,7 @@ Run `/config` inside the session to see the merged view.
 | `Ctrl+S`       | Session list                                 |
 | `Ctrl+M`       | Switch model                                 |
 | `Ctrl+B`       | Toggle sidebar                               |
-| `Ctrl+T`       | Toggle tool block details                    |
+| `Ctrl+T`       | Focus the diff panel (`j`/`k` scroll, `Esc`) |
 | `Shift+Tab`    | Cycle permission mode                        |
 | `Shift+↑/↓`    | Scroll messages by line (works while typing) |
 | `PgUp/PgDn`    | Scroll by page                               |

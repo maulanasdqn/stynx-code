@@ -174,16 +174,20 @@ pub async fn run_loop(
                         save_session(&session_repo, &conversation).await;
                         let sid = session_repo.current().await.ok().flatten();
                         stynx_code_truncus::capture(sid.as_deref(), &cwd, &conversation, false).await;
-                        tui.state.toasts.success(format!(
-                            "done · {} · {} in / {} out",
+                        let footer = format!(
+                            "{} · {} · {} in / {} out",
+                            stynx_code_tui::widgets::status_line::display_model(&tui.state.model_name),
                             fmt_elapsed(elapsed),
                             fmt_tokens(in_delta),
                             fmt_tokens(out_delta),
-                        ));
+                        );
+                        tui.state.set_turn_footer(footer);
                     }
                     Ok(Err(e)) if e.is_interrupted() => {
                         conversation = pre;
                         if let Some(m) = tui.state.conversation.messages.last_mut() { m.is_streaming = false; }
+                        let model = stynx_code_tui::widgets::status_line::display_model(&tui.state.model_name);
+                        tui.state.set_turn_footer(format!("{model} · {} · interrupted", fmt_elapsed(elapsed)));
                     }
                     Ok(Err(e)) => {
                         tui.state.push_system_message(format!("Error: {e}"));

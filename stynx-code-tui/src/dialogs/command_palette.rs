@@ -80,9 +80,9 @@ pub const COMMANDS: &[PaletteCommand] = &[
         shortcut: Some("S-Tab"),
     },
     PaletteCommand {
-        name: "tools.focus",
-        title: "Focus tool history",
-        desc: "Move focus to the left tool list",
+        name: "diff.focus",
+        title: "Focus diff panel",
+        desc: "Scroll the diff of this session's file edits",
         category: "View",
         shortcut: Some("^T"),
     },

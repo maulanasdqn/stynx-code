@@ -5,6 +5,17 @@ pub struct DisplayMessage {
     pub thinking: String,
     pub tool_uses: Vec<DisplayToolUse>,
     pub is_streaming: bool,
+    /// Text and tool calls in the order they streamed. Empty for messages that
+    /// were restored from a saved session; those render `content` then the tools.
+    pub parts: Vec<MessagePart>,
+    /// Turn summary drawn under a finished assistant message (model, time, tokens).
+    pub footer: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+pub enum MessagePart {
+    Text(String),
+    Tool(usize),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -57,6 +68,9 @@ pub struct BlockKey {
     pub width: u16,
     pub theme: &'static str,
     pub spin: char,
+    /// Changes whenever a tool call of the message changes state or output.
+    pub tools: u64,
+    pub details: bool,
 }
 
 pub struct RenderedBlock {

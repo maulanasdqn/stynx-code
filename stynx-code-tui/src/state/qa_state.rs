@@ -3,15 +3,38 @@ use serde::Deserialize;
 const MARKER: &str = "@@QA@@";
 
 #[derive(Deserialize, Clone)]
+#[serde(from = "RawOption")]
 pub struct QaOption {
     pub label: String,
-    #[serde(default)]
     pub description: Option<String>,
+}
+
+// Models sometimes send an option as a bare string instead of an object.
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum RawOption {
+    Label(String),
+    Full {
+        label: String,
+        #[serde(default)]
+        description: Option<String>,
+    },
+}
+
+impl From<RawOption> for QaOption {
+    fn from(raw: RawOption) -> Self {
+        match raw {
+            RawOption::Label(label) => Self { label, description: None },
+            RawOption::Full { label, description } => Self { label, description },
+        }
+    }
 }
 
 #[derive(Deserialize, Clone)]
 pub struct QaQuestion {
+    #[serde(default)]
     pub question: String,
+    #[serde(default)]
     pub header: String,
     #[serde(default, rename = "multiSelect")]
     pub multi_select: bool,
@@ -25,8 +48,40 @@ struct Envelope {
 
 pub fn parse_qa(raw: &str) -> Option<Vec<QaQuestion>> {
     let json = raw.trim_start().strip_prefix(MARKER)?;
-    let envelope: Envelope = serde_json::from_str(json).ok()?;
+    let mut envelope: Envelope = serde_json::from_str(json).ok()?;
+    envelope.questions.retain(|q| !q.options.is_empty());
+    for q in &mut envelope.questions {
+        // Models sometimes leave out `question` or `header`; show the one that is present.
+        if q.question.trim().is_empty() {
+            q.question = q.header.clone();
+        }
+        if q.header.trim().is_empty() {
+            q.header = q.question.chars().take(12).collect();
+        }
+    }
     (!envelope.questions.is_empty()).then_some(envelope.questions)
+}
+
+/// Plain-text form of a question payload, for the free-text fallback dialog.
+pub fn readable_prompt(raw: &str) -> String {
+    let Some(json) = raw.trim_start().strip_prefix(MARKER) else { return raw.to_string() };
+    let Ok(value) = serde_json::from_str::<serde_json::Value>(json) else {
+        return "The agent asked a question that could not be shown. Type your answer.".to_string();
+    };
+    let mut lines = Vec::new();
+    for q in value["questions"].as_array().into_iter().flatten() {
+        let title = q["question"].as_str().or(q["header"].as_str()).unwrap_or("Question");
+        lines.push(title.to_string());
+        for opt in q["options"].as_array().into_iter().flatten() {
+            let label = opt.as_str().or(opt["label"].as_str()).unwrap_or_default();
+            match opt["description"].as_str() {
+                Some(desc) if !label.is_empty() => lines.push(format!("  • {label} — {desc}")),
+                Some(desc) => lines.push(format!("  • {desc}")),
+                None => lines.push(format!("  • {label}")),
+            }
+        }
+    }
+    lines.join("\n")
 }
 
 pub struct QaState {
@@ -179,6 +234,14 @@ mod tests {
         assert!(matches!(qa.confirm(), QaOutcome::Pending));
         assert_eq!(qa.index, 1);
         assert!(qa.answer().starts_with("Diff view: Bottom"));
+    }
+
+    #[test]
+    fn tolerates_missing_question_and_string_options() {
+        let raw = r#"@@QA@@{"questions":[{"header":"Fix","options":[{"label":"Edit README","description":"No code change"},"Split files"]}]}"#;
+        let questions = parse_qa(raw).unwrap();
+        assert_eq!(questions[0].question, "Fix");
+        assert_eq!(questions[0].options[1].label, "Split files");
     }
 
     #[test]
