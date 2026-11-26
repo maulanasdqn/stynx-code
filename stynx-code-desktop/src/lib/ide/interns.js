@@ -40,13 +40,6 @@ export async function saveIntern(entry, previous, apiKey) {
   await refreshInterns();
 }
 
-export async function setInternKey(row, apiKey) {
-  if (!row.keyEnv || !apiKey.trim()) return;
-  await saveInternKey(row.keyEnv, apiKey);
-  mcpPendingReload.set(true);
-  await refreshInterns();
-}
-
 export async function deleteIntern(name) {
   const ok = await confirmDestructive(`Remove intern "${name}"?`, "It will be removed from ~/.stynx/settings.json. Its API key stays in keys.json.", "Remove");
   if (!ok) return;

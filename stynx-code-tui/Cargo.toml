@@ -8,16 +8,11 @@ repository = "https://github.com/maulanasdqn/stynx-code"
 readme = "../README.md"
 
 [dependencies]
-stynx-code-errors = { workspace = true }
 stynx-code-types = { workspace = true }
-stynx-code-config = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-tokio = { workspace = true }
-async-trait = { workspace = true }
 tracing = { workspace = true }
 crossterm = { workspace = true }
-syntect = { workspace = true }
 ratatui = { workspace = true }
 unicode-width = { workspace = true }
 arboard = { version = "3", default-features = false, features = ["wayland-data-control", "image-data"] }

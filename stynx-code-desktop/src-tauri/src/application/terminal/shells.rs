@@ -1,4 +1,4 @@
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 pub fn shell_args(shell: &str) -> &'static [&'static str] {
     let name = shell.rsplit(['/', '\\']).next().unwrap_or(shell).to_ascii_lowercase();
@@ -17,33 +17,6 @@ pub fn default_shell() -> String {
     } else {
         std::env::var("SHELL").unwrap_or_else(|_| "/bin/sh".into())
     }
-}
-
-fn executable(path: &Path) -> bool {
-    let Ok(meta) = path.metadata() else { return false };
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        meta.is_file() && meta.permissions().mode() & 0o111 != 0
-    }
-    #[cfg(not(unix))]
-    {
-        meta.is_file()
-    }
-}
-
-pub fn available_shells() -> Vec<String> {
-    let mut candidates = vec![PathBuf::from(default_shell())];
-    if let Ok(listed) = std::fs::read_to_string("/etc/shells") {
-        candidates.extend(listed.lines().map(str::trim).filter(|l| l.starts_with('/')).map(PathBuf::from));
-    }
-    let mut seen = std::collections::HashSet::new();
-    candidates
-        .into_iter()
-        .filter(|path| executable(path))
-        .filter(|path| seen.insert(std::fs::canonicalize(path).unwrap_or_else(|_| path.clone())))
-        .map(|path| path.to_string_lossy().to_string())
-        .collect()
 }
 
 pub fn zsh_keys_dir(shell: &str, id: u32) -> Option<PathBuf> {

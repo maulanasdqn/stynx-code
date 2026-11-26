@@ -68,7 +68,7 @@ fn merge(global: Settings, project: Settings) -> Settings {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::config::{HooksConfig, PermissionSettings, Settings};
+    use crate::domain::config::{PermissionSettings, Settings};
 
     #[test]
     fn test_merge_concatenates_permissions() {

@@ -21,8 +21,3 @@ pub use config::Config;
 pub use project::project_from_cwd;
 pub use recall::recall_section;
 pub use tools::memory_tools;
-
-/// Whether Truncus is configured on this machine.
-pub fn is_configured() -> bool {
-    Config::load().is_some()
-}

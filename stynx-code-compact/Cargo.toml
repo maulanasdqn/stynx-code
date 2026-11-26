@@ -10,10 +10,8 @@ readme = "../README.md"
 [dependencies]
 stynx-code-errors = { workspace = true }
 stynx-code-types = { workspace = true }
-serde = { workspace = true }
 serde_json = { workspace = true }
 tokio = { workspace = true }
-async-trait = { workspace = true }
 tracing = { workspace = true }
 futures = { workspace = true }
 regex = { workspace = true }

@@ -8,7 +8,6 @@ use tokio::sync::Mutex;
 use crate::application::session::{Session, SessionSlot, session_info};
 use crate::domain::models::SessionInfo;
 use crate::infrastructure::bridges;
-use crate::infrastructure::commands::active;
 
 #[tauri::command]
 pub async fn init_session(
@@ -61,9 +60,4 @@ pub async fn init_session(
     let info = session_info(&session);
     *slot.0.lock().await = Some(session);
     Ok(info)
-}
-
-#[tauri::command]
-pub async fn get_session_info(slot: State<'_, SessionSlot>) -> Result<SessionInfo, String> {
-    Ok(session_info(active(&slot).await?.as_ref()))
 }

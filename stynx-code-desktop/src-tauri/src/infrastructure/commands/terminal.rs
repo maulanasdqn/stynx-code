@@ -2,7 +2,6 @@ use serde::Serialize;
 use tauri::State;
 use tauri::ipc::Channel;
 
-use crate::application::terminal::shells::available_shells;
 use crate::infrastructure::ide_state::{IdeState, TerminalState};
 
 #[derive(Clone, Serialize)]
@@ -10,11 +9,6 @@ use crate::infrastructure::ide_state::{IdeState, TerminalState};
 pub enum TerminalEvent {
     Output { data: String },
     Exit,
-}
-
-#[tauri::command]
-pub fn terminal_shells() -> Vec<String> {
-    available_shells()
 }
 
 #[tauri::command]

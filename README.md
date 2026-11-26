@@ -468,24 +468,20 @@ Every file write/edit is tracked on an undo stack. Use `/undo [n]` to restore th
 
 ## Architecture
 
-The project is a 20-crate Rust workspace. Most crates follow Clean Architecture with `domain/`, `application/`, and `infrastructure/` layers where it adds value.
+The project is a 16-crate Rust workspace. Most crates follow Clean Architecture with `domain/`, `application/`, and `infrastructure/` layers where it adds value.
 
 - `stynx-code-errors`: Common application error types and results.
 - `stynx-code-types`: Core traits and structs for tools, providers, messages, and permissions.
 - `stynx-code-tools`: Implements 39 tools — 36 built-in (file I/O, shell, web, tasks, scheduling, LSP) plus 3 MCP dynamic tool wrappers.
 - `stynx-code-provider`: Anthropic SSE streaming and OpenAI-compatible provider integrations.
 - `stynx-code-engine`: Core query engine — multi-turn agentic loop, tool execution, context compaction, hooks, undo stack.
-- `stynx-code-server`: Axum HTTP API for headless operation.
 - `stynx-code`: Main executable — CLI parsing, TUI orchestration, agent/intern delegation, skill loading, system prompt assembly.
 - `stynx-code-auth`: OAuth PKCE and API key credential resolution.
 - `stynx-code-permission`: Interactive and configuration-driven permission gating.
 - `stynx-code-commands`: Slash-command expansion and file reference resolution in the TUI.
 - `stynx-code-memory`: Per-project session persistence.
 - `stynx-code-config`: Global and project-specific settings, hooks, intern config.
-- `stynx-code-services`: Analytics, LSP bridge, rate limiting, token estimation, diagnostics, notifications.
 - `stynx-code-compact`: Conversation summarization pipeline (Auto → Micro → Session Memory → Full).
-- `stynx-code-bridge`: External integration bridge (stdio, WebSocket, JWT).
-- `stynx-code-plugins`: Plugin lifecycle — subprocess plugins, builtins, config.
 - `stynx-code-tui`: `ratatui` terminal UI — state management, rendering, themes, widgets.
 - `stynx-code-app`: Application orchestration — agent tool registration, intern delegation (including background mode), system prompt assembly, main provider picker.
 - `stynx-code-truncus`: Truncus memory integration — recalls past session summaries and lessons, captures conversations, and exposes memory search tools.

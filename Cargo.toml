@@ -5,17 +5,13 @@ members = [
     "stynx-code-tools",
     "stynx-code-provider",
     "stynx-code-engine",
-    "stynx-code-server",
     "stynx-code",
     "stynx-code-auth",
     "stynx-code-permission",
     "stynx-code-commands",
     "stynx-code-memory",
     "stynx-code-config",
-    "stynx-code-services",
     "stynx-code-compact",
-    "stynx-code-bridge",
-    "stynx-code-plugins",
     "stynx-code-tui",
     "stynx-code-app",
     "stynx-code-truncus",
@@ -38,8 +34,6 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 regex = "1"
 glob = "0.3"
 crossterm = "0.28"
-indicatif = "0.17"
-syntect = { version = "5", default-features = false, features = ["default-themes", "default-syntaxes", "regex-fancy"] }
 base64 = "0.22"
 clap = { version = "4", features = ["derive"] }
 sha2 = "0.10"
@@ -51,17 +45,12 @@ stynx-code-types = { version = "0.33.18", path = "stynx-code-types" }
 stynx-code-tools = { version = "0.33.18", path = "stynx-code-tools" }
 stynx-code-provider = { version = "0.33.18", path = "stynx-code-provider" }
 stynx-code-engine = { version = "0.33.18", path = "stynx-code-engine" }
-stynx-code-server = { version = "0.33.18", path = "stynx-code-server" }
-stynx-code = { version = "0.33.18", path = "stynx-code" }
 stynx-code-auth = { version = "0.33.18", path = "stynx-code-auth" }
 stynx-code-permission = { version = "0.33.18", path = "stynx-code-permission" }
 stynx-code-commands = { version = "0.33.18", path = "stynx-code-commands" }
 stynx-code-memory = { version = "0.33.18", path = "stynx-code-memory" }
 stynx-code-config = { version = "0.33.18", path = "stynx-code-config" }
-stynx-code-services = { version = "0.33.18", path = "stynx-code-services" }
 stynx-code-compact = { version = "0.33.18", path = "stynx-code-compact" }
-stynx-code-bridge = { version = "0.33.18", path = "stynx-code-bridge" }
-stynx-code-plugins = { version = "0.33.18", path = "stynx-code-plugins" }
 stynx-code-tui = { version = "0.33.18", path = "stynx-code-tui" }
 stynx-code-app = { version = "0.33.18", path = "stynx-code-app" }
 stynx-code-truncus = { version = "0.33.18", path = "stynx-code-truncus" }

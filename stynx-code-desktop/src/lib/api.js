@@ -2,7 +2,6 @@ import { invoke } from "@tauri-apps/api/core";
 
 export const initSession = (workspacePath, provider) =>
   invoke("init_session", { workspacePath, provider });
-export const getSessionInfo = () => invoke("get_session_info");
 export const sendMessage = (text, images) => invoke("send_message", { text, images });
 export const cancel = () => invoke("cancel");
 export const setModel = (model) => invoke("set_model", { model });

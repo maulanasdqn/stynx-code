@@ -175,27 +175,6 @@ impl InputState {
         self.pasted_images.clear();
     }
 
-    pub fn get_display_text(&self) -> &str { &self.buffer }
-
-    pub fn cursor_line_col(&self) -> (usize, usize) {
-        use unicode_width::UnicodeWidthChar;
-        let mut line = 0;
-        let mut last_nl = 0;
-        for (i, b) in self.buffer.as_bytes().iter().enumerate() {
-            if i >= self.cursor_pos { break; }
-            if *b == b'\n' {
-                line += 1;
-                last_nl = i + 1;
-            }
-        }
-        let cursor = self.cursor_pos.min(self.buffer.len());
-        let col: usize = self.buffer[last_nl..cursor]
-            .chars()
-            .map(|c| c.width().unwrap_or(0))
-            .sum();
-        (line, col)
-    }
-
     pub fn line_count(&self) -> usize {
         self.buffer.matches('\n').count() + 1
     }

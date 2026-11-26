@@ -155,31 +155,3 @@ pub fn parse_sse_event(event_type: &str, data: &str) -> Vec<StreamEvent> {
         _ => vec![],
     }
 }
-
-pub fn parse_sse_lines(text: &str) -> Vec<(String, String)> {
-    let mut events = Vec::new();
-    let mut current_event = String::new();
-    let mut current_data = String::new();
-
-    for line in text.lines() {
-        if line.is_empty() {
-            if !current_data.is_empty() {
-                events.push((current_event.clone(), current_data.clone()));
-                current_event.clear();
-                current_data.clear();
-            }
-            continue;
-        }
-        if let Some(val) = line.strip_prefix("event: ") {
-            current_event = val.to_string();
-        } else if let Some(val) = line.strip_prefix("data: ") {
-            current_data = val.to_string();
-        }
-    }
-
-    if !current_data.is_empty() {
-        events.push((current_event, current_data));
-    }
-
-    events
-}

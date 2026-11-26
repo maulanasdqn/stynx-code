@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use stynx_code_errors::AppResult;
 
-use crate::domain::{CommandDefinition, CommandHandler, CommandOutput, CommandType};
+use crate::domain::{CommandDefinition, CommandHandler, CommandOutput};
 use crate::application::parse_command::parse_command;
 use crate::application::execute_command::execute_command;
 use crate::domain::command::CommandResult;
@@ -47,13 +47,6 @@ impl CommandRegistry {
         results.sort();
         results.dedup();
         results
-    }
-
-    pub fn list_commands(&self) -> Vec<(&str, &str, CommandType)> {
-        self.commands.iter()
-            .filter(|c| !c.is_hidden)
-            .map(|c| (c.name.as_str(), c.description.as_str(), c.command_type))
-            .collect()
     }
 
     pub async fn dispatch(&self, input: &str) -> Option<AppResult<CommandOutput>> {

@@ -4,7 +4,7 @@ use stynx_code_errors::{AppError, AppResult};
 use stynx_code_types::{PermissionLevel, Tool};
 use serde_json::{Value, json};
 
-use super::question_bridge::{OptionalQuestionBridge, QuestionBridge, SharedQuestionBridge};
+use super::question_bridge::{OptionalQuestionBridge, SharedQuestionBridge};
 
 pub struct AskUserTool {
     paused: Arc<AtomicBool>,
@@ -18,10 +18,6 @@ impl AskUserTool {
 
     pub fn bridge_handle(&self) -> SharedQuestionBridge {
         self.bridge.clone()
-    }
-
-    pub fn install_bridge(&self, b: QuestionBridge) {
-        self.bridge.set(b);
     }
 }
 

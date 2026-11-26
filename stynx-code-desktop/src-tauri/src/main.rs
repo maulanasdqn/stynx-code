@@ -17,7 +17,6 @@ fn main() {
         .manage(infrastructure::ide_state::LspState::default())
         .invoke_handler(tauri::generate_handler![
             session::init_session,
-            session::get_session_info,
             messaging::send_message,
             messaging::cancel,
             messaging::respond_permission,
@@ -70,7 +69,6 @@ fn main() {
             git::git_unstage,
             git::git_discard,
             git::git_commit,
-            terminal::terminal_shells,
             terminal::terminal_open,
             terminal::terminal_write,
             terminal::terminal_resize,

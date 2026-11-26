@@ -1,4 +1,4 @@
-import { derived, get } from "svelte/store";
+import { derived } from "svelte/store";
 import { composerDraft, composerFocus } from "../stores.js";
 import { agentVisible, editorContext, includeContext } from "./ide-stores.js";
 import { languageIdFor } from "./languages.js";
@@ -41,5 +41,3 @@ export function suggestionsFor(ctx) {
   }
   return [`Explain ${name}`, `Find bugs in ${name}`, `Write tests for ${name}`, `How is ${name} used?`];
 }
-
-export const hasEditorContext = () => Boolean(get(editorContext)?.path);

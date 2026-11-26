@@ -8,7 +8,7 @@ pub mod text;
 
 pub use auto_compact::AutoCompactor;
 pub use full_compact::FullCompactor;
-pub use grouping::{MessageGroup, estimate_conversation_tokens};
+pub use grouping::estimate_conversation_tokens;
 pub use micro_compact::MicroCompactor;
 pub use session_memory_compact::SessionMemoryCompactor;
 pub use text::safe_truncate;
@@ -33,15 +33,6 @@ impl CompactionPipeline {
     pub fn new() -> Self {
         Self {
             auto: AutoCompactor::default(),
-            micro: MicroCompactor::default(),
-            session_memory: SessionMemoryCompactor::new(),
-            full: FullCompactor::new(),
-        }
-    }
-
-    pub fn with_threshold(threshold: f64) -> Self {
-        Self {
-            auto: AutoCompactor::new(threshold),
             micro: MicroCompactor::default(),
             session_memory: SessionMemoryCompactor::new(),
             full: FullCompactor::new(),

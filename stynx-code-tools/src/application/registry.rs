@@ -23,13 +23,6 @@ impl ToolRegistry {
         self.tools.get(name)
     }
 
-    pub fn get_by_name_or_alias(&self, name: &str) -> Option<&Arc<dyn Tool>> {
-        if let Some(tool) = self.tools.get(name) {
-            return Some(tool);
-        }
-        self.tools.values().find(|t| t.aliases().contains(&name))
-    }
-
     fn make_tool_def(t: &dyn Tool) -> Value {
         let mut def = json!({
             "name": t.name(),
@@ -40,27 +33,6 @@ impl ToolRegistry {
             def.as_object_mut().unwrap().insert("strict".to_string(), json!(true));
         }
         def
-    }
-
-    pub fn tool_definitions(&self) -> Vec<Value> {
-        self.tools
-            .values()
-            .filter(|t| !t.should_defer())
-            .map(|t| Self::make_tool_def(t.as_ref()))
-            .collect()
-    }
-
-    pub fn deferred_tool_definitions(&self) -> Vec<Value> {
-        self.tools
-            .values()
-            .filter(|t| t.should_defer())
-            .map(|t| {
-                json!({
-                    "name": t.name(),
-                    "description": t.description(),
-                })
-            })
-            .collect()
     }
 
     pub fn tool_definitions_filtered<F>(&self, predicate: F) -> Vec<Value>

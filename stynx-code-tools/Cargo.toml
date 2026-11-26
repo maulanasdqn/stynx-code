@@ -18,5 +18,4 @@ tokio = { workspace = true }
 tracing = { workspace = true }
 glob = { workspace = true }
 reqwest = { workspace = true }
-regex = { workspace = true }
 crossterm = { workspace = true }

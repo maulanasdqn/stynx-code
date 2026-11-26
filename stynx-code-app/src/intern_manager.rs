@@ -6,7 +6,6 @@ use tokio::sync::oneshot;
 use tokio::task::JoinHandle;
 
 #[derive(Clone)]
-#[allow(dead_code)]
 pub enum InternStatus {
     Running,
     Completed,

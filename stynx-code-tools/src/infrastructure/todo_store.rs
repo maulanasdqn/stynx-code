@@ -25,12 +25,3 @@ pub fn read_todos() -> Vec<TodoItem> {
 pub fn write_todos(todos: Vec<TodoItem>) {
     *store().lock().unwrap() = todos;
 }
-
-pub fn current_active_form() -> Option<String> {
-    store()
-        .lock()
-        .unwrap()
-        .iter()
-        .find(|t| t.status == "in_progress")
-        .and_then(|t| t.active_form.clone())
-}
