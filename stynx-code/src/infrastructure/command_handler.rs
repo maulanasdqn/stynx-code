@@ -13,7 +13,7 @@ use crate::infrastructure::command_usage::render_usage;
 use crate::infrastructure::skills::Skill;
 use crate::infrastructure::terminal::{BOLD, CYAN, DIM, GREEN, MAGENTA, RED, RESET, YELLOW};
 
-const FAST_MODEL: &str = "claude-haiku-4-5-20251001";
+const FAST_MODEL: &str = "claude-haiku-5-5";
 
 #[allow(clippy::too_many_arguments)]
 pub async fn handle_slash_command(
@@ -46,7 +46,7 @@ pub async fn handle_slash_command(
         let current = provider.model_name();
         if current.contains("haiku") {
             let saved = BEFORE_FAST.lock().ok().and_then(|mut slot| slot.take());
-            let restore = saved.as_deref().unwrap_or("claude-opus-4-6[1m]");
+            let restore = saved.as_deref().unwrap_or("claude-opus-4-8");
             provider.set_model(restore);
             return Some(CommandAction::Output(format!("\n  {DIM}Fast mode off →{RESET} {BOLD}{CYAN}{restore}{RESET}\n")));
         } else {

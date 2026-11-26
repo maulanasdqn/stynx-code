@@ -200,6 +200,12 @@ pub fn environment_section(env: &EnvInfo) -> String {
 }
 
 fn marketing_name_for_model(model_id: &str) -> Option<&'static str> {
+    if model_id.contains("claude-fable-5-1") { return Some("Claude Fable 5.1"); }
+    if model_id.contains("claude-opus-5-5") { return Some("Claude Opus 5.5"); }
+    if model_id.contains("claude-sonnet-5-5") { return Some("Claude Sonnet 5.5"); }
+    if model_id.contains("claude-haiku-5-5") { return Some("Claude Haiku 5.5"); }
+    if model_id.contains("claude-opus-4-8") { return Some("Claude Opus 4.8"); }
+    if model_id.contains("claude-opus-4-7") { return Some("Claude Opus 4.7"); }
     if model_id.contains("claude-sonnet-4-6") { return Some("Claude Sonnet 4.6"); }
     if model_id.contains("claude-opus-4-6") { return Some("Claude Opus 4.6"); }
     if model_id.contains("claude-haiku-4-5") { return Some("Claude Haiku 4.5"); }
@@ -209,6 +215,8 @@ fn marketing_name_for_model(model_id: &str) -> Option<&'static str> {
 }
 
 fn knowledge_cutoff(model_id: &str) -> Option<&'static str> {
+    if model_id.contains("claude-opus-5-5") { return Some("Jun 2026"); }
+    if model_id.contains("claude-opus-4-7") || model_id.contains("claude-opus-4-8") { return None; }
     if model_id.contains("claude-sonnet-4-6") { return Some("Aug 2025"); }
     if model_id.contains("claude-opus-4-6") { return Some("May 2025"); }
     if model_id.contains("claude-haiku-4") { return Some("Feb 2025"); }

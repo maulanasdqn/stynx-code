@@ -114,11 +114,13 @@ pub fn handle_model_cmd(name: &str, provider: &dyn Provider, mode_flag: &std::sy
     if name.is_empty() {
         let current = provider.model_name();
         let items: Vec<(String, String)> = vec![
+            ("claude-opus-5-5".into(), "claude-opus-5-5".into()),
+            ("claude-fable-5-1".into(), "claude-fable-5-1".into()),
+            ("claude-sonnet-5-5".into(), "claude-sonnet-5-5".into()),
+            ("claude-haiku-5-5".into(), "claude-haiku-5-5".into()),
+            ("claude-opus-4-8".into(), "claude-opus-4-8".into()),
             ("claude-opus-4-6[1m]".into(), "claude-opus-4-6[1m]".into()),
-            ("claude-opus-4-6".into(), "claude-opus-4-6".into()),
             ("claude-sonnet-4-6".into(), "claude-sonnet-4-6".into()),
-            ("claude-haiku-4-5-20251001".into(), "claude-haiku-4-5-20251001".into()),
-            ("claude-sonnet-4-5-20250929".into(), "claude-sonnet-4-5-20250929".into()),
         ];
         match select_from_list("Models", &items, &current) {
             Some(selected) => {
@@ -129,9 +131,10 @@ pub fn handle_model_cmd(name: &str, provider: &dyn Provider, mode_flag: &std::sy
         }
     } else {
         let resolved = match name {
-            "opus" => "claude-opus-4-6[1m]",
-            "sonnet" => "claude-sonnet-4-6",
-            "haiku" => "claude-haiku-4-5-20251001",
+            "opus" => "claude-opus-4-8",
+            "fable" => "claude-fable-5-1",
+            "sonnet" => "claude-sonnet-5-5",
+            "haiku" => "claude-haiku-5-5",
             other => other,
         };
         let _ = mode_flag;

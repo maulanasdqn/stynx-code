@@ -9,20 +9,38 @@ struct ModelEntry {
 
 const MODELS: &[ModelEntry] = &[
     ModelEntry {
-        id: "claude-opus-4-6[1m]",
-        name: "Claude Opus 4.6 (1M context)",
+        id: "claude-opus-5-5",
+        name: "Claude Opus 5.5",
+        provider: "Anthropic",
+        note: Some("API key only"),
+    },
+    ModelEntry {
+        id: "claude-fable-5-1",
+        name: "Claude Fable 5.1",
+        provider: "Anthropic",
+        note: Some("most capable, API key only"),
+    },
+    ModelEntry {
+        id: "claude-sonnet-5-5",
+        name: "Claude Sonnet 5.5",
+        provider: "Anthropic",
+        note: Some("balanced"),
+    },
+    ModelEntry {
+        id: "claude-haiku-5-5",
+        name: "Claude Haiku 5.5",
+        provider: "Anthropic",
+        note: Some("fast"),
+    },
+    ModelEntry {
+        id: "claude-opus-4-8",
+        name: "Claude Opus 4.8",
         provider: "Anthropic",
         note: Some("default"),
     },
     ModelEntry {
-        id: "claude-opus-4-7",
-        name: "Claude Opus 4.7",
-        provider: "Anthropic",
-        note: Some("most capable"),
-    },
-    ModelEntry {
-        id: "claude-opus-4-6",
-        name: "Claude Opus 4.6",
+        id: "claude-opus-4-6[1m]",
+        name: "Claude Opus 4.6 (1M context)",
         provider: "Anthropic",
         note: None,
     },
@@ -30,23 +48,11 @@ const MODELS: &[ModelEntry] = &[
         id: "claude-sonnet-4-6",
         name: "Claude Sonnet 4.6",
         provider: "Anthropic",
-        note: Some("balanced"),
+        note: None,
     },
     ModelEntry {
         id: "claude-haiku-4-5-20251001",
         name: "Claude Haiku 4.5",
-        provider: "Anthropic",
-        note: Some("fast"),
-    },
-    ModelEntry {
-        id: "claude-sonnet-4-20250514",
-        name: "Claude Sonnet 4",
-        provider: "Anthropic",
-        note: None,
-    },
-    ModelEntry {
-        id: "claude-3-7-sonnet-20250219",
-        name: "Claude Sonnet 3.7",
         provider: "Anthropic",
         note: None,
     },

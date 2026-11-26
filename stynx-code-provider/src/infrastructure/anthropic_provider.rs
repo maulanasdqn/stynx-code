@@ -35,9 +35,11 @@ pub struct Utilization {
     pub extra_usage: Option<ExtraUsage>,
 }
 
-const DEFAULT_MODEL: &str = "anthropic/claude-sonnet-4-20250514";
-pub(crate) const OAUTH_DEFAULT_MODEL: &str = "claude-opus-4-6[1m]";
-const OPUS_MODEL: &str = "claude-opus-4-6";
+const DEFAULT_MODEL: &str = "claude-opus-5-5";
+// OAuth requests identify as an older Claude Code version, and the API refuses
+// Opus 5.5 and Fable 5.1 for it, so OAuth stays on the newest model it accepts.
+pub(crate) const OAUTH_DEFAULT_MODEL: &str = "claude-opus-4-8";
+const OPUS_MODEL: &str = "claude-opus-4-8";
 pub(crate) const MAX_TOKENS: u32 = 4096;
 
 pub(crate) const OAUTH_BETA_HEADER: &str = "oauth-2025-04-20,interleaved-thinking-2025-05-14,claude-code-20250219,prompt-caching-2024-07-31";
@@ -50,6 +52,14 @@ pub(crate) fn split_context_suffix(model: &str) -> (&str, bool) {
         Some(base) => (base.trim_end(), true),
         None => (model, false),
     }
+}
+
+/// Models that have a 1M context window by default, with no `[1m]` suffix or beta header.
+pub(crate) fn is_native_1m(model: &str) -> bool {
+    let m = model.to_ascii_lowercase();
+    ["opus-4-7", "opus-4-8", "opus-5", "sonnet-5", "haiku-5", "fable-5", "mythos-5"]
+        .iter()
+        .any(|family| m.contains(family))
 }
 pub(crate) const BILLING_HEADER_LINE: &str = "x-anthropic-billing-header: cc_version=2.1.87.d34; cc_entrypoint=cli;";
 
@@ -250,7 +260,8 @@ impl AnthropicProvider {
 impl Provider for AnthropicProvider {
     fn model_name(&self) -> String { self.effective_model() }
     fn context_window(&self) -> u64 {
-        if split_context_suffix(&self.effective_model()).1 { 1_000_000 } else { 200_000 }
+        let model = self.effective_model();
+        if split_context_suffix(&model).1 || is_native_1m(&model) { 1_000_000 } else { 200_000 }
     }
     fn set_model(&self, model: &str) { AnthropicProvider::set_model(self, model); }
     fn set_max_tokens(&self, n: u32) { AnthropicProvider::set_max_tokens(self, n); }

@@ -2,7 +2,7 @@ use stynx_code_auth::Credential;
 use stynx_code_types::{ContentBlock, Conversation, Role};
 use serde_json::{Value, json};
 
-use super::anthropic_provider::BILLING_HEADER_LINE;
+use super::anthropic_provider::{BILLING_HEADER_LINE, is_native_1m};
 
 pub fn build_request_body(
     credential: &Credential,
@@ -84,10 +84,12 @@ pub fn build_request_body(
 
     if thinking {
         let model_lower = model.to_lowercase();
-        let supports_adaptive = model_lower.contains("opus-4-6") || model_lower.contains("sonnet-4-6");
+        // Opus 4.7+ and the 5.x family reject `budget_tokens` with a 400.
+        let supports_adaptive = model_lower.contains("opus-4-6")
+            || model_lower.contains("sonnet-4-6")
+            || is_native_1m(&model_lower);
 
         if supports_adaptive {
-
             body["thinking"] = json!({"type": "adaptive"});
         } else {
             match thinking_budget {
@@ -189,6 +191,18 @@ mod tests {
             &[], true, 16000, None, None,
         );
         assert_eq!(body["thinking"]["type"], "adaptive");
+    }
+
+    #[test]
+    fn test_adaptive_thinking_for_current_models() {
+        for model in ["claude-opus-5-5", "claude-sonnet-5-5", "claude-haiku-5-5", "claude-fable-5-1", "claude-opus-4-8"] {
+            let body = build_request_body(
+                &api_key_credential(), model, &simple_conversation(),
+                &[], true, 16000, Some(10000), None,
+            );
+            assert_eq!(body["thinking"]["type"], "adaptive", "{model}");
+            assert!(body["thinking"].get("budget_tokens").is_none(), "{model}");
+        }
     }
 
     #[test]
