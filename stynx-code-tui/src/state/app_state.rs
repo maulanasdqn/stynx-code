@@ -1,4 +1,4 @@
-use stynx_code_types::EngineEvent;
+use stynx_code_types::{ContentBlock, Conversation, EngineEvent, Role};
 use super::{ConversationState, DiffLine, DiffLineKind, DisplayMessage, DisplayToolUse, InputState, MessagePart, ModalState, ToastState, ToolUseStatus};
 
 /// USD price per million tokens `(input, output)` for a given model.
@@ -74,7 +74,6 @@ pub struct AppState {
     pub git_branch: Option<String>,
     pub cwd: String,
     pub is_streaming: bool,
-    pub is_paused: bool,
     pub spinner_frame: usize,
     pub spinner_tick: u8,
     pub total_input: u64,
@@ -88,7 +87,8 @@ pub struct AppState {
 
     pub sub_agents: Vec<SubAgentState>,
 
-    pub last_summary: Option<Vec<String>>,
+    /// Tool calls of the last turn as (kind, failed).
+    pub last_summary: Option<Vec<(String, bool)>>,
 
     pub diff_panel: DiffPanelState,
     /// Set when a tool starts, so the next text segment of the same turn
@@ -170,7 +170,6 @@ impl AppState {
                 .and_then(|p| p.to_str().map(|s| s.to_string()))
                 .unwrap_or_default(),
             is_streaming: false,
-            is_paused: false,
             spinner_frame: 0,
             spinner_tick: 0,
             total_input: 0,
@@ -192,7 +191,6 @@ impl AppState {
 
     pub fn push_user_message(&mut self, text: impl Into<String>) {
         self.last_summary = None;
-        self.is_paused = false;
         self.conversation.messages.push(DisplayMessage {
             role: "user".to_string(),
             content: text.into(),
@@ -204,10 +202,82 @@ impl AppState {
     }
 
     /// Attach the turn summary to the last assistant message.
+    /// Put the turn summary under the current turn's reply. A turn stopped
+    /// before any output has no reply yet, so it gets an empty one; the footer
+    /// must never land on an earlier turn.
     pub fn set_turn_footer(&mut self, text: impl Into<String>) {
-        if let Some(m) = self.conversation.messages.iter_mut().rev().find(|m| m.role == "assistant") {
-            m.footer = Some(text.into());
+        let messages = &mut self.conversation.messages;
+        let turn_start = messages.iter().rposition(|m| m.role == "user").map_or(0, |i| i + 1);
+        match messages[turn_start..].iter_mut().rev().find(|m| m.role == "assistant") {
+            Some(m) => m.footer = Some(text.into()),
+            None => messages.push(DisplayMessage {
+                role: "assistant".to_string(), content: String::new(),
+                thinking: String::new(), tool_uses: Vec::new(), is_streaming: false,
+                parts: Vec::new(), footer: Some(text.into()),
+            }),
         }
+    }
+
+    /// Rebuild the transcript from a saved conversation. The saved blocks are
+    /// replayed as engine events, so a restored turn renders like a live one.
+    pub fn restore_conversation(&mut self, conversation: &Conversation) {
+        let mut replay = AppState::new();
+        replay.cwd = self.cwd.clone();
+        let mut tool_names: std::collections::HashMap<&str, &str> = std::collections::HashMap::new();
+
+        for msg in &conversation.messages {
+            match msg.role {
+                Role::User => {
+                    for block in &msg.content {
+                        if let ContentBlock::ToolResult { tool_use_id, content, is_error } = block {
+                            if let Some(name) = tool_names.get(tool_use_id.as_str()) {
+                                replay.apply_engine_event(EngineEvent::ToolResult {
+                                    name: name.to_string(),
+                                    output: content.clone(),
+                                    is_error: is_error.unwrap_or(false),
+                                });
+                            }
+                        }
+                    }
+                    let text = msg.content.iter().filter_map(|b| match b {
+                        ContentBlock::Text { text } => Some(text.as_str()),
+                        _ => None,
+                    }).collect::<Vec<_>>().join("");
+                    if !text.is_empty() {
+                        replay.apply_engine_event(EngineEvent::TurnComplete);
+                        replay.push_user_message(text);
+                    }
+                }
+                Role::Assistant => {
+                    for block in &msg.content {
+                        match block {
+                            ContentBlock::Text { text } if !text.is_empty() => {
+                                replay.apply_engine_event(EngineEvent::TextDelta(text.clone()));
+                            }
+                            ContentBlock::Thinking { thinking } => {
+                                replay.apply_engine_event(EngineEvent::ThinkingDelta(thinking.clone()));
+                            }
+                            ContentBlock::ToolUse { id, name, input } => {
+                                tool_names.insert(id, name);
+                                replay.apply_engine_event(EngineEvent::ToolStart { name: name.clone(), id: id.clone() });
+                                replay.apply_engine_event(EngineEvent::ToolInput { json_chunk: input.to_string() });
+                            }
+                            _ => {}
+                        }
+                    }
+                }
+            }
+        }
+        replay.apply_engine_event(EngineEvent::TurnComplete);
+
+        // A call without a saved result was cut off; never leave it spinning.
+        for tool in replay.conversation.messages.iter_mut().flat_map(|m| m.tool_uses.iter_mut()) {
+            if tool.status == ToolUseStatus::Running {
+                tool.status = ToolUseStatus::Error;
+                tool.output_preview = "no result (interrupted)".to_string();
+            }
+        }
+        self.conversation.messages = replay.conversation.messages;
     }
 
     pub fn push_system_message(&mut self, text: impl Into<String>) {
@@ -292,7 +362,7 @@ impl AppState {
                         .find(|t| t.status == ToolUseStatus::Running)
                     {
                         t.input_json.push_str(&json_chunk);
-                        t.input_summary = summarize_tool_input(&t.name, &t.input_json);
+                        t.input_summary = summarize_tool_input(&t.name, &t.input_json, &self.cwd);
                     }
                 }
             }
@@ -324,12 +394,14 @@ impl AppState {
                 let clean_output = crate::util::strip_ansi(&output);
                 let preview_limit = if is_error { 400 } else { 80 };
                 if let Some(m) = self.conversation.messages.last_mut() {
-                    if let Some(t) = m.tool_uses.iter_mut().rev()
+                    // Results arrive in call order, so the oldest running call of
+                    // this name owns the result (parallel reads share a name).
+                    if let Some(t) = m.tool_uses.iter_mut()
                         .find(|t| t.name == name && t.status == ToolUseStatus::Running) {
                         t.status = if is_error { ToolUseStatus::Error } else { ToolUseStatus::Completed };
                         t.output_preview = clean_output.lines().next().unwrap_or("").chars().take(preview_limit).collect();
                         if t.input_summary.is_empty() {
-                            t.input_summary = summarize_tool_input(&t.name, &t.input_json);
+                            t.input_summary = summarize_tool_input(&t.name, &t.input_json, &self.cwd);
                         }
                         t.output_excerpt = excerpt_lines(&clean_output, 6, 200);
                         if t.name == "file_edit" || t.name == "file_write" {
@@ -339,7 +411,18 @@ impl AppState {
                         if matches!(t.name.as_str(), "read" | "grep" | "glob") && !is_error {
                             let n = clean_output.lines().filter(|l| !l.trim().is_empty()).count();
                             if n > 0 && !t.input_summary.contains("(")  {
-                                t.input_summary = format!("{}  ({n} lines)", t.input_summary);
+                                let unit = if n == 1 { "line" } else { "lines" };
+                                t.input_summary = format!("{}  ({n} {unit})", t.input_summary);
+                            }
+                        }
+                        if t.name == "ask_user_question" && !is_error {
+                            let answer = first_line(clean_output.trim());
+                            if !answer.is_empty() {
+                                t.input_summary = if t.input_summary.is_empty() {
+                                    shorten(answer, 80)
+                                } else {
+                                    format!("{} → {}", t.input_summary, shorten(answer, 80))
+                                };
                             }
                         }
                     }
@@ -355,34 +438,9 @@ impl AppState {
                 let tool_summary = self.conversation.messages.last().and_then(|m| {
                     if m.role != "assistant" { return None; }
                     if m.tool_uses.is_empty() { return None; }
-                    let parts: Vec<String> = m.tool_uses.iter().map(|t| {
-                        let pretty = match t.name.as_str() {
-                            "bash" => "Bash".into(),
-                            "read" => "Read".into(),
-                            "file_write" => "Write".into(),
-                            "file_edit" => "Edit".into(),
-                            "glob" => "Glob".into(),
-                            "grep" => "Grep".into(),
-                            "web_fetch" => "WebFetch".into(),
-                            "web_search" => "WebSearch".into(),
-                            "todo_write" => "TodoWrite".into(),
-                            "todo_read" => "TodoRead".into(),
-                            "ask_user_question" => "AskUser".into(),
-                            "agent" => "Agent".into(),
-                            other => {
-                                let mut s = other.replace('_', " ");
-                                s = s.split_whitespace()
-                                    .map(|w| { let mut c = w.chars(); c.next().map(|f| f.to_uppercase().collect::<String>() + c.as_str()).unwrap_or_default() })
-                                    .collect::<Vec<_>>().join("");
-                                s
-                            }
-                        };
-                        if t.input_summary.is_empty() {
-                            pretty
-                        } else {
-                            format!("{}({})", pretty, t.input_summary)
-                        }
-                    }).collect();
+                    let parts: Vec<(String, bool)> = m.tool_uses.iter()
+                        .map(|t| (tool_kind(&t.name).to_string(), t.status == ToolUseStatus::Error))
+                        .collect();
                     if parts.is_empty() { None } else { Some(parts) }
                 });
                 if let Some(m) = self.conversation.messages.last_mut() {
@@ -470,6 +528,23 @@ impl Default for AppState {
     fn default() -> Self { Self::new() }
 }
 
+/// Short noun for a tool call, used by the turn summary ("2 commands · 1 edit").
+fn tool_kind(name: &str) -> &'static str {
+    match name {
+        "bash" => "command",
+        "read" => "read",
+        "file_edit" => "edit",
+        "file_write" => "write",
+        "grep" | "glob" => "search",
+        "web_fetch" => "fetch",
+        "web_search" => "web search",
+        "todo_write" | "todo_read" => "todo update",
+        "ask_user_question" => "question",
+        n if n == "agent" || n == "explore" || n.starts_with("delegate_to_") => "subagent",
+        _ => "tool call",
+    }
+}
+
 fn try_parse(json: &str) -> Option<serde_json::Value> {
     if json.trim().is_empty() { return None; }
     serde_json::from_str(json).ok()
@@ -489,8 +564,18 @@ fn first_line(s: &str) -> &str {
     s.lines().next().unwrap_or("")
 }
 
-pub fn summarize_tool_input(tool: &str, json: &str) -> String {
+/// One-line summary of a tool call's input. Paths under `cwd` are shown relative to it.
+pub fn summarize_tool_input(tool: &str, json: &str, cwd: &str) -> String {
     let parsed = try_parse(json);
+    let rel = |path: String| -> String {
+        match path.strip_prefix(cwd) {
+            Some(rest) if !cwd.is_empty() && (rest.is_empty() || rest.starts_with('/')) => {
+                let rest = rest.trim_start_matches('/');
+                if rest.is_empty() { ".".to_string() } else { rest.to_string() }
+            }
+            _ => path,
+        }
+    };
     let get = |k: &str| -> String {
         parsed
             .as_ref()
@@ -517,7 +602,7 @@ pub fn summarize_tool_input(tool: &str, json: &str) -> String {
             format!("$ {}{suffix}", shorten(first_line(&cmd), 140))
         }
         "read" => {
-            let path = get("file_path");
+            let path = rel(get("file_path"));
             if path.is_empty() { return String::new(); }
             let offset = parsed.as_ref().and_then(|v| v.get("offset")).and_then(|v| v.as_u64());
             let limit = parsed.as_ref().and_then(|v| v.get("limit")).and_then(|v| v.as_u64());
@@ -528,7 +613,7 @@ pub fn summarize_tool_input(tool: &str, json: &str) -> String {
             }
         }
         "file_write" => {
-            let path = get("file_path");
+            let path = rel(get("file_path"));
             let content_len = parsed
                 .as_ref()
                 .and_then(|v| v.get("content"))
@@ -539,7 +624,7 @@ pub fn summarize_tool_input(tool: &str, json: &str) -> String {
             if content_len > 0 { format!("{path}  ({content_len} lines)") } else { path }
         }
         "file_edit" => {
-            let path = get("file_path");
+            let path = rel(get("file_path"));
             if path.is_empty() { return String::new(); }
             path
         }
@@ -550,7 +635,7 @@ pub fn summarize_tool_input(tool: &str, json: &str) -> String {
         }
         "grep" => {
             let pattern = get("pattern");
-            let path = get("path");
+            let path = rel(get("path"));
             let mut s = shorten(&pattern, 100);
             if !path.is_empty() {
                 s.push_str(" in ");
@@ -572,6 +657,18 @@ pub fn summarize_tool_input(tool: &str, json: &str) -> String {
             shorten(first_line(&task), 140)
         }
         "todo_write" | "todo_read" => String::new(),
+        "ask_user_question" => {
+            let single = get("question");
+            let first = parsed
+                .as_ref()
+                .and_then(|v| v.get("questions"))
+                .and_then(|q| q.get(0))
+                .and_then(|q| q.get("question"))
+                .and_then(|q| q.as_str())
+                .unwrap_or("");
+            let q = if single.is_empty() { first } else { single.as_str() };
+            shorten(first_line(q), 80)
+        }
         _ => {
 
             parsed
@@ -695,5 +792,105 @@ mod text_break_tests {
         assert!(matches!(&parts[..], [
             MessagePart::Text(a), MessagePart::Tool(0), MessagePart::Tool(1), MessagePart::Text(b),
         ] if a == "Looking." && b == "Found it."));
+    }
+}
+
+#[cfg(test)]
+mod restore_tests {
+    use super::*;
+    use stynx_code_types::Message;
+
+    #[test]
+    fn restored_session_keeps_tool_rows_in_one_turn() {
+        let cwd = "/work/proj";
+        let conversation = Conversation {
+            system: None,
+            messages: vec![
+                Message::user("fix it"),
+                Message::assistant(vec![
+                    ContentBlock::Text { text: "Looking.".into() },
+                    ContentBlock::ToolUse {
+                        id: "t1".into(),
+                        name: "read".into(),
+                        input: serde_json::json!({ "file_path": "/work/proj/src/a.rs" }),
+                    },
+                    ContentBlock::ToolUse {
+                        id: "t2".into(),
+                        name: "read".into(),
+                        input: serde_json::json!({ "file_path": "/work/proj/src/gone.rs" }),
+                    },
+                ]),
+                Message {
+                    role: Role::User,
+                    content: vec![
+                        ContentBlock::ToolResult { tool_use_id: "t1".into(), content: "fn a() {}".into(), is_error: None },
+                        ContentBlock::ToolResult { tool_use_id: "t2".into(), content: "not found".into(), is_error: Some(true) },
+                    ],
+                },
+                Message::assistant(vec![ContentBlock::Text { text: "Done.".into() }]),
+            ],
+        };
+
+        let mut state = AppState::new();
+        state.cwd = cwd.into();
+        state.restore_conversation(&conversation);
+
+        let messages = &state.conversation.messages;
+        assert_eq!(messages.len(), 2);
+        let turn = &messages[1];
+        assert!(!turn.is_streaming);
+        assert_eq!(turn.tool_uses.len(), 2);
+        assert_eq!(turn.tool_uses[0].status, ToolUseStatus::Completed);
+        assert_eq!(turn.tool_uses[0].input_summary, "src/a.rs  (1 line)");
+        assert_eq!(turn.tool_uses[1].status, ToolUseStatus::Error);
+        assert!(matches!(&turn.parts[..], [
+            MessagePart::Text(a), MessagePart::Tool(0), MessagePart::Tool(1), MessagePart::Text(b),
+        ] if a == "Looking." && b == "Done."));
+    }
+
+    #[test]
+    fn a_tool_without_a_saved_result_is_not_left_running() {
+        let conversation = Conversation {
+            system: None,
+            messages: vec![
+                Message::user("run it"),
+                Message::assistant(vec![ContentBlock::ToolUse {
+                    id: "t1".into(),
+                    name: "bash".into(),
+                    input: serde_json::json!({ "command": "sleep 100" }),
+                }]),
+            ],
+        };
+        let mut state = AppState::new();
+        state.restore_conversation(&conversation);
+        assert_eq!(state.conversation.messages[1].tool_uses[0].status, ToolUseStatus::Error);
+    }
+
+    #[test]
+    fn paths_outside_cwd_stay_absolute() {
+        let json = r#"{"file_path":"/work/project-b/x.rs"}"#;
+        assert_eq!(summarize_tool_input("read", json, "/work/project"), "/work/project-b/x.rs");
+        assert_eq!(summarize_tool_input("read", r#"{"file_path":"/work/project/x.rs"}"#, "/work/project"), "x.rs");
+    }
+}
+
+#[cfg(test)]
+mod footer_tests {
+    use super::*;
+
+    #[test]
+    fn a_turn_stopped_before_output_keeps_the_previous_footer() {
+        let mut state = AppState::new();
+        state.push_user_message("first");
+        state.apply_engine_event(EngineEvent::TextDelta("Reply.".into()));
+        state.apply_engine_event(EngineEvent::TurnComplete);
+        state.set_turn_footer("first footer");
+        state.push_user_message("second");
+        state.set_turn_footer("interrupted");
+
+        let messages = &state.conversation.messages;
+        assert_eq!(messages[1].footer.as_deref(), Some("first footer"));
+        assert_eq!(messages.last().unwrap().role, "assistant");
+        assert_eq!(messages.last().unwrap().footer.as_deref(), Some("interrupted"));
     }
 }

@@ -1,22 +1,4 @@
 use stynx_code_types::{Conversation, ContentBlock, Role};
-use stynx_code_tui::DisplayMessage;
-
-pub(super) fn conv_to_tui(conversation: &Conversation) -> Vec<DisplayMessage> {
-    conversation.messages.iter().filter_map(|m| {
-        let role = match m.role { Role::User => "user", Role::Assistant => "assistant" };
-        let text = m.content.iter().filter_map(|b| {
-            if let ContentBlock::Text { text } = b { Some(text.as_str()) } else { None }
-        }).collect::<Vec<_>>().join("");
-        if text.is_empty() { return None; }
-        Some(DisplayMessage {
-            role: role.to_string(),
-            content: text,
-            thinking: String::new(),
-            tool_uses: Vec::new(),
-            is_streaming: false, parts: Vec::new(), footer: None,
-        })
-    }).collect()
-}
 
 pub(super) async fn export_transcript(conversation: &Conversation, cwd: &str) -> Result<String, String> {
     use std::time::{SystemTime, UNIX_EPOCH};

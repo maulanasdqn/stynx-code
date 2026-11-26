@@ -23,7 +23,7 @@ use super::command_types::CommandAction;
 use super::skills::Skill;
 use super::terminal::set_current_model;
 
-use display::{conv_to_tui, export_transcript, fmt_elapsed, fmt_tokens};
+use display::{export_transcript, fmt_elapsed, fmt_tokens};
 use sidebar::{spawn_engine, refresh_sidebar_sessions, EngineSlot};
 
 
@@ -59,7 +59,7 @@ pub async fn run_loop(
     tui.state.context_window = provider.context_window();
     tui.state.git_branch = super::terminal::git_branch();
     tui.state.cwd = cwd.clone();
-    tui.state.conversation.messages = conv_to_tui(&conversation);
+    tui.state.restore_conversation(&conversation);
     refresh_sidebar_sessions(&session_repo, &mut tui).await;
     let persisted = stynx_code_tui::persistence::load();
     stynx_code_tui::persistence::apply_to(&mut tui.state, &persisted);
@@ -157,7 +157,20 @@ pub async fn run_loop(
                 let (start_in, start_out) = std::mem::take(&mut tokens_at_start);
                 let in_delta = total_input.load(Ordering::Relaxed).saturating_sub(start_in);
                 let out_delta = total_output.load(Ordering::Relaxed).saturating_sub(start_out);
-                match task.await {
+                let result = task.await;
+                // Esc aborts the task, so an interrupt arrives as a cancelled join.
+                let interrupted = match &result {
+                    Ok(Err(e)) => e.is_interrupted(),
+                    Err(e) => e.is_cancelled(),
+                    Ok(Ok(_)) => false,
+                };
+                if interrupted {
+                    conversation = pre;
+                    if let Some(m) = tui.state.conversation.messages.last_mut() { m.is_streaming = false; }
+                    tui.state.live_thinking.clear();
+                    let model = stynx_code_tui::widgets::status_line::display_model(&tui.state.model_name);
+                    tui.state.set_turn_footer(format!("{model} · {} · interrupted", fmt_elapsed(elapsed)));
+                } else { match result {
                     Ok(Ok(updated)) => {
                         if updated.messages.len() <= conversation.messages.len() {
                             // Mid-run compaction rewrote history: archive the full
@@ -183,20 +196,16 @@ pub async fn run_loop(
                         );
                         tui.state.set_turn_footer(footer);
                     }
-                    Ok(Err(e)) if e.is_interrupted() => {
-                        conversation = pre;
-                        if let Some(m) = tui.state.conversation.messages.last_mut() { m.is_streaming = false; }
-                        let model = stynx_code_tui::widgets::status_line::display_model(&tui.state.model_name);
-                        tui.state.set_turn_footer(format!("{model} · {} · interrupted", fmt_elapsed(elapsed)));
-                    }
                     Ok(Err(e)) => {
                         tui.state.push_system_message(format!("Error: {e}"));
                         tui.state.toasts.error(format!("failed · {}", fmt_elapsed(elapsed)));
                         conversation = pre;
                     }
                     Err(_) => { conversation = pre; }
-                }
+                } }
                 tui.state.is_streaming = false;
+                // The footer can change without a new engine event; redraw now.
+                needs_draw = true;
 
                 // The engine is now idle — replay the next queued prompt, if any.
                 if let Some(next) = queued_prompts.pop_front() {
@@ -353,7 +362,7 @@ or set DEEPSEEK_API_KEY / OPENROUTER_API_KEY in .env and restart.",
                             &system_prompt, &cwd, &conversation, &skills, &mut pinned_files, &mut tui).await;
                         match action {
                             Some(CommandAction::ReplaceConversation(c)) => {
-                                tui.state.conversation.messages = conv_to_tui(&c);
+                                tui.state.restore_conversation(&c);
                                 conversation = c;
                             }
                             Some(CommandAction::SendToEngine(msg, tools)) => {
@@ -408,7 +417,7 @@ or set DEEPSEEK_API_KEY / OPENROUTER_API_KEY in .env and restart.",
                 UiAction::SelectSession(session_id) => {
                     match session_repo.load(&session_id).await {
                         Ok(Some(loaded)) => {
-                            tui.state.conversation.messages = conv_to_tui(&loaded);
+                            tui.state.restore_conversation(&loaded);
                             conversation = loaded;
                             let _ = session_repo.set_current(&session_id).await;
                             tui.state.sidebar.session_id = session_id.clone();
@@ -477,7 +486,7 @@ or set DEEPSEEK_API_KEY / OPENROUTER_API_KEY in .env and restart.",
                                         tui.state.sidebar.session_id = id;
                                     }
                                     let new_count = compacted.messages.len();
-                                    tui.state.conversation.messages = conv_to_tui(&compacted);
+                                    tui.state.restore_conversation(&compacted);
                                     conversation = compacted;
                                     save_session(&session_repo, &conversation).await;
                                     refresh_sidebar_sessions(&session_repo, &mut tui).await;
@@ -564,10 +573,8 @@ or set DEEPSEEK_API_KEY / OPENROUTER_API_KEY in .env and restart.",
                         tui.state.is_pending = false;
                         tui.state.stale_warned = false;
                         tui.state.elapsed_secs = 0;
-                        tui.state.is_paused = true;
                         tui.state.sub_agents.clear();
                         last_event_at = None;
-                        tui.state.toasts.warn("interrupted");
                     }
 
                     pending_prompt.take();

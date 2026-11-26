@@ -209,7 +209,8 @@ impl EventHandler {
                 UiAction::None
             }
             (KeyCode::Esc, _) => {
-                if state.is_streaming {
+                // `is_pending` covers the wait before the first token arrives.
+                if state.is_streaming || state.is_pending {
                     return UiAction::Interrupt;
                 }
                 if !state.input.slash_matches.is_empty() {

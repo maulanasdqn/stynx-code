@@ -122,7 +122,6 @@ impl TuiApp {
         s.elapsed_secs.hash(&mut h);
         s.is_streaming.hash(&mut h);
         s.is_pending.hash(&mut h);
-        s.is_paused.hash(&mut h);
         s.toasts.items.len().hash(&mut h);
         s.modal.active.is_some().hash(&mut h);
         s.conversation.messages.len().hash(&mut h);

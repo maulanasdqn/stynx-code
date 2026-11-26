@@ -68,9 +68,7 @@ impl<'a> Widget for StatusLine<'a> {
             Span::styled(format!(" {}", display_model(&s.model_name)), Style::default().fg(theme::TEXT())),
         ];
         let spin = FRAMES[s.spinner_frame % FRAMES.len()];
-        if s.is_paused {
-            left.push(Span::styled("  paused", Style::default().fg(theme::WARNING())));
-        } else if s.is_pending {
+        if s.is_pending {
             left.push(Span::styled(format!("  {spin} connecting"), dim));
         } else if s.is_streaming {
             left.push(Span::styled(
